@@ -73,29 +73,76 @@
                 <!-- Home Page -->
                 <section id="homePage" class="page active">
                     <div class="dashboard-grid">
-                        <div class="card stats-card">
-                            <h3>Welcome!</h3>
-                            <p id="welcomeMessage">Welcome to Gym Management System</p>
+                        <div class="card welcome-card">
+                            <div class="pill">Home base</div>
+                            <h3 id="welcomeHeading">Welcome back</h3>
+                            <p id="welcomeMessage" class="welcome-sub">Welcome to Gym Management System</p>
+                            <div class="welcome-meta">
+                                <span class="chip">Live dashboard</span>
+                                <span class="chip">Quick actions ready</span>
+                            </div>
                         </div>
-                        <div class="card">
-                            <h3>📋 Quick Stats</h3>
+
+                        <div class="card quick-card">
+                            <div class="card-head">
+                                <span class="card-icon">📋</span>
+                                <h3>Quick stats</h3>
+                            </div>
                             <div class="stats">
                                 <div class="stat">
-                                    <p class="stat-label">Total Bills</p>
+                                    <div class="stat-top">
+                                        <span class="stat-icon">🧾</span>
+                                        <p class="stat-label">Total Bills</p>
+                                    </div>
                                     <p class="stat-value" id="totalBills">-</p>
                                 </div>
                                 <div class="stat">
-                                    <p class="stat-label">Active Members</p>
+                                    <div class="stat-top">
+                                        <span class="stat-icon">🏋️</span>
+                                        <p class="stat-label">Active Members</p>
+                                    </div>
                                     <p class="stat-value" id="activeMembers">-</p>
                                 </div>
                                 <div class="stat">
-                                    <p class="stat-label">Total Payments</p>
+                                    <div class="stat-top">
+                                        <span class="stat-icon">💳</span>
+                                        <p class="stat-label">Total Payments</p>
+                                    </div>
                                     <p class="stat-value" id="totalPayments">-</p>
                                 </div>
                                 <div class="stat">
-                                    <p class="stat-label">Unread Notifications</p>
+                                    <div class="stat-top">
+                                        <span class="stat-icon">🔔</span>
+                                        <p class="stat-label">Unread Notifications</p>
+                                    </div>
                                     <p class="stat-value" id="unreadNotifs">-</p>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="focus-grid">
+                        <div class="card focus-card">
+                            <div class="card-head">
+                                <span class="card-icon">⚡</span>
+                                <h3>Today’s focus</h3>
+                            </div>
+                            <ul class="focus-list">
+                                <li><span class="dot dot-primary"></span>Review upcoming renewals and send reminders</li>
+                                <li><span class="dot dot-success"></span>Confirm cleared payments</li>
+                                <li><span class="dot dot-warning"></span>Check notifications that need replies</li>
+                            </ul>
+                        </div>
+                        <div class="card focus-card">
+                            <div class="card-head">
+                                <span class="card-icon">🚀</span>
+                                <h3>Quick links</h3>
+                            </div>
+                            <div class="quick-links">
+                                <a href="#" class="quick-link" data-page="members">Add member</a>
+                                <a href="#" class="quick-link" data-page="bills">Create bill</a>
+                                <a href="#" class="quick-link" data-page="notifications">Send notification</a>
+                                <a href="#" class="quick-link" data-page="reports">View reports</a>
                             </div>
                         </div>
                     </div>

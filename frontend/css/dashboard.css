@@ -37,42 +37,148 @@
     overflow-y: auto;
 }
 
-.nav-item {
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.welcome-card {
+    background: radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.25), transparent 45%),
+                radial-gradient(circle at 80% 30%, rgba(249, 115, 22, 0.25), transparent 40%),
+                linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.welcome-card .pill {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.welcome-card h3 {
+    margin: 0.75rem 0 0.5rem;
+    font-size: 1.5rem;
+}
+
+.welcome-sub {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.welcome-meta {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.chip {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.quick-card .card-head,
+.focus-card .card-head {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1rem 1.5rem;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.card-icon {
+    font-size: 1.1rem;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.9rem;
+}
+
+.stat {
+    padding: 1rem;
+    border-radius: 0.75rem;
+    background: var(--light-bg);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.stat-top {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
+.stat-icon {
+    font-size: 1rem;
+}
+
+.stat-label {
+    color: var(--text-light);
+    font-weight: 600;
+    margin: 0;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0.2rem 0 0;
     color: var(--text-dark);
-    transition: all 0.2s;
-    border-left: 3px solid transparent;
 }
 
-.nav-item:hover {
-    background-color: var(--light-bg);
+.focus-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.focus-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    color: var(--text-dark);
+}
+
+.focus-card .dot {
+    margin-right: 0.5rem;
+}
+
+.quick-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+}
+
+.quick-link {
+    display: inline-block;
+    padding: 0.75rem 0.9rem;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    background: var(--light-bg);
+    color: var(--text-dark);
+    font-weight: 600;
+    text-align: center;
+}
+
+.quick-link:hover {
+    border-color: var(--primary-color);
     color: var(--primary-color);
+    box-shadow: var(--shadow);
 }
-
-.nav-item.active {
-    background-color: rgba(99, 102, 241, 0.1);
-    border-left-color: var(--primary-color);
-    color: var(--primary-color);
-}
-
-.nav-item .icon {
-    font-size: 1.25rem;
-}
-
-.nav-item.logout {
-    margin-top: auto;
-    color: var(--danger-color);
-}
-
-.nav-item.logout:hover {
-    background-color: rgba(239, 68, 68, 0.1);
-}
-
-.main-content {
-    flex: 1;
     margin-left: 260px;
     display: flex;
     flex-direction: column;

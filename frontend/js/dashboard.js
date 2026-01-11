@@ -79,6 +79,23 @@ function setupNavigation() {
             loadPage(page);
         });
     });
+
+    const quickLinks = document.querySelectorAll('.quick-link');
+    quickLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const page = link.getAttribute('data-page');
+            if (!page) return;
+            navItems.forEach(nav => {
+                if (nav.getAttribute('data-page') === page) {
+                    nav.classList.add('active');
+                } else if (!nav.id) {
+                    nav.classList.remove('active');
+                }
+            });
+            loadPage(page);
+        });
+    });
 }
 
 function setupLogout() {
@@ -232,6 +249,10 @@ async function loadHomeData() {
     try {
         document.getElementById('welcomeMessage').textContent =
             `Welcome back, ${currentUser.first_name || currentUser.username}!`;
+        const heading = document.getElementById('welcomeHeading');
+        if (heading) {
+            heading.textContent = `Welcome, ${currentUser.first_name || currentUser.username}`;
+        }
 
         await refreshQuickStats();
     } catch (error) {
