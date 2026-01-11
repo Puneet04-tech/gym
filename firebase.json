@@ -1,0 +1,21 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "functions": {
+    "source": "functions"
+  },
+  "hosting": {
+    "public": "frontend",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "**", "destination": "/pages/index.html" }
+    ]
+  },
+  "emulators": {
+    "firestore": { "port": 8086 },
+    "auth": { "port": 9099 },
+    "functions": { "port": 5001 },
+    "hosting": { "port": 5000 }
+  }
+}

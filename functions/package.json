@@ -1,0 +1,14 @@
+{
+  "name": "gym-management-functions",
+  "type": "module",
+  "engines": {
+    "node": "20"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.11.1",
+    "firebase-functions": "^5.1.1"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^0.3.3"
+  }
+}

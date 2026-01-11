@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && request.auth.token.role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isMember() {
+      return hasRole('member');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Users: admin can read/write all; users can read/update own doc
+    match /users/{userId} {
+      allow read, update: if isAdmin() || isOwner(userId);
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Members: admin full; members can read their own member doc
+    match /members/{memberId} {
+      allow read: if isAdmin() || (isMember() && request.auth.token.memberId == memberId);
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Bills: admin full; members read own
+    match /bills/{billId} {
+      allow read: if isAdmin() || (isMember() && request.resource.data.memberId == request.auth.token.memberId);
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Payments: admin full; members read own
+    match /payments/{paymentId} {
+      allow read: if isAdmin() || (isMember() && request.resource.data.memberId == request.auth.token.memberId);
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Fee packages and subscriptions: admin full; members read
+    match /feePackages/{pkgId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /memberSubscriptions/{subId} {
+      allow read: if isAdmin() || (isMember() && request.resource.data.memberId == request.auth.token.memberId);
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Notifications: admin full; members read own
+    match /notifications/{notifId} {
+      allow read, update: if isAdmin() || (isMember() && request.resource.data.userId == request.auth.uid);
+      allow create, delete: if isAdmin();
+    }
+
+    // Activity logs: admin read; writes via backend only
+    match /activityLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // Supplements/Diets/Store (future): admin full; members read
+    match /supplements/{id} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /diets/{id} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
