@@ -1,5 +1,8 @@
 // API Configuration
-const API_BASE_URL = 'https://gym-gub5.onrender.com/api';
+const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const API_BASE_URL = isLocal
+    ? 'http://localhost:5000/api'
+    : 'https://gym-gub5.onrender.com/api';
 
 class APIClient {
     constructor(baseURL) {
