@@ -219,18 +219,31 @@ const seedDefaultAdmin = async () => {
 };
 
 // Middleware
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,https://gym-app-b5298.web.app,https://gym-app-b5298.firebaseapp.com').split(',');
+const defaultOrigins = ['http://localhost:3000', 'https://gym-app-b5298.web.app', 'https://gym-app-b5298.firebaseapp.com'];
+const envOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow non-browser requests (no origin) and any whitelisted origins
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    return callback(new Error('Not allowed by CORS'));
+    logger.warn('CORS blocked request', { origin });
+    return callback(new Error('CORS not allowed'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// Explicit 403 handler for CORS rejections
+app.use((err, req, res, next) => {
+  if (err?.message === 'CORS not allowed') {
+    return res.status(403).json({ message: 'CORS not allowed' });
+  }
+  return next(err);
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
