@@ -7,9 +7,166 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <div id="app">
-        <!-- This will be populated by JavaScript -->
+    <div class="landing">
+        <header class="nav">
+            <div class="brand">PulseFit</div>
+            <div class="nav-actions">
+                <a class="ghost-link" href="/pages/login.html">Member Login</a>
+                <a id="nav-cta" class="btn btn-primary" href="/pages/login.html">Enter App</a>
+            </div>
+        </header>
+
+        <main class="hero">
+            <div class="hero-copy">
+                <div class="pill">Modern gym management, zero friction</div>
+                <h1>Run your gym with clarity and calm.</h1>
+                <p>Track members, payments, diets, and notifications in one focused dashboard. No downloads, no clutter—just a clean control center for your team.</p>
+                <div class="hero-actions">
+                    <a id="cta-primary" class="btn btn-primary" href="/pages/login.html">Get started</a>
+                    <a class="btn btn-ghost" href="#features">See what’s inside</a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-number">98%</div>
+                        <div class="stat-label">Faster onboarding</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">12K+</div>
+                        <div class="stat-label">Payments tracked</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">4.9</div>
+                        <div class="stat-label">Team satisfaction</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="glass-card">
+                    <div class="card-row">
+                        <span>Active members</span>
+                        <strong>1,284</strong>
+                    </div>
+                    <div class="card-row">
+                        <span>Payments cleared</span>
+                        <strong>$42,160</strong>
+                    </div>
+                    <div class="card-row progress">
+                        <span>Engagement</span>
+                        <div class="progress-track">
+                            <div class="progress-bar" style="width: 76%;"></div>
+                        </div>
+                        <strong>76%</strong>
+                    </div>
+                    <div class="sparkline">
+                        <div class="dot" style="left: 10%"></div>
+                        <div class="dot" style="left: 35%"></div>
+                        <div class="dot" style="left: 60%"></div>
+                        <div class="dot" style="left: 82%"></div>
+                    </div>
+                </div>
+                <div class="floating-badge">Instant check-ins · Smart alerts · Unified view</div>
+            </div>
+        </main>
+
+        <section id="features" class="section">
+            <div class="section-head">
+                <p class="eyebrow">Purpose-built tools</p>
+                <h2>Everything you need, nothing you don’t.</h2>
+                <p class="subhead">Stay on top of members, payments, diets, and notifications without bouncing between tabs.</p>
+            </div>
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <div class="icon">✓</div>
+                    <h3>Membership clarity</h3>
+                    <p>Instantly spot expiring plans, renewals, and attendance trends in one glance.</p>
+                </article>
+                <article class="feature-card">
+                    <div class="icon">$</div>
+                    <h3>Payments in sync</h3>
+                    <p>Track invoices, mark settlements, and export reports with zero spreadsheet drama.</p>
+                </article>
+                <article class="feature-card">
+                    <div class="icon">🍎</div>
+                    <h3>Diet programs</h3>
+                    <p>Assign and update diet plans that members can access anywhere.</p>
+                </article>
+                <article class="feature-card">
+                    <div class="icon">🔔</div>
+                    <h3>Smart notifications</h3>
+                    <p>Send timely reminders for renewals, sessions, and personalized nudges.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section section-split">
+            <div class="panel">
+                <p class="eyebrow">Operational calm</p>
+                <h2>Designed for busy front desks.</h2>
+                <p class="subhead">The dashboard highlights what needs attention—overdue payments, pending diets, member follow-ups—so your team can act fast.</p>
+                <div class="pill-list">
+                    <span>One-click renewals</span>
+                    <span>Role-based access</span>
+                    <span>Secure sign-in</span>
+                    <span>Exportable reports</span>
+                </div>
+            </div>
+            <div class="panel panel-muted">
+                <div class="mini-card">
+                    <div class="mini-title">Today’s focus</div>
+                    <ul>
+                        <li><span class="dot dot-primary"></span>5 renewals due</li>
+                        <li><span class="dot dot-success"></span>3 payments cleared</li>
+                        <li><span class="dot dot-warning"></span>2 diets awaiting update</li>
+                    </ul>
+                </div>
+                <div class="mini-card">
+                    <div class="mini-title">Members online</div>
+                    <div class="avatars">
+                        <span class="avatar">A</span>
+                        <span class="avatar">M</span>
+                        <span class="avatar">K</span>
+                        <span class="avatar">J</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section cta">
+            <div>
+                <p class="eyebrow">Ready when you are</p>
+                <h2>Log in and keep the floor moving.</h2>
+                <p class="subhead">Jump back into the dashboard to check renewals, update members, and keep payments flowing.</p>
+            </div>
+            <div class="cta-actions">
+                <a id="cta-secondary" class="btn btn-primary" href="/pages/login.html">Login to dashboard</a>
+                <a class="btn btn-ghost" href="/pages/dashboard.html">Preview the layout</a>
+            </div>
+        </section>
     </div>
-    <script src="/js/router.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            const primaryCta = document.getElementById('cta-primary');
+            const secondaryCta = document.getElementById('cta-secondary');
+            const navCta = document.getElementById('nav-cta');
+
+            if (token) {
+                primaryCta.textContent = 'Open dashboard';
+                primaryCta.href = '/pages/dashboard.html';
+                secondaryCta.textContent = 'Log out to switch accounts';
+                secondaryCta.href = '/pages/dashboard.html';
+                navCta.textContent = 'Dashboard';
+                navCta.href = '/pages/dashboard.html';
+            } else {
+                primaryCta.textContent = 'Login to continue';
+                primaryCta.href = '/pages/login.html';
+                secondaryCta.textContent = 'Try the flow';
+                secondaryCta.href = '/pages/login.html';
+                navCta.textContent = 'Enter App';
+                navCta.href = '/pages/login.html';
+            }
+        });
+    </script>
 </body>
 </html>
