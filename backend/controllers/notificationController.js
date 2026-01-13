@@ -28,16 +28,24 @@ exports.create = async (req, res) => {
     if (!validation.valid) {
       return res.status(400).json({ message: validation.message });
     }
+    
+    // Verify user exists
+    const userExists = await database.get('SELECT id FROM users WHERE id = ?', [user_id]);
+    if (!userExists) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+    
     const id = generateId();
     await database.run(
       `INSERT INTO notifications (id, user_id, title, message, type, is_read, scheduled_date)
        VALUES (?, ?, ?, ?, ?, 0, ?)`,
       [id, user_id, title, message, type, scheduled_date]
     );
+    logger.info('Notification created', { id, user_id, type });
     res.status(201).json({ message: 'Notification created', id });
   } catch (error) {
-    logger.error('Create notification error', { error: error.message });
-    res.status(500).json({ message: 'Failed to create notification' });
+    logger.error('Create notification error', { error: error.message, stack: error.stack, body: req.body });
+    res.status(500).json({ message: 'Failed to create notification', error: error.message });
   }
 };
 
@@ -45,14 +53,22 @@ exports.create = async (req, res) => {
 exports.listByUser = async (req, res) => {
   try {
     const { userId } = req.params;
+    
+    // Verify user exists
+    const userExists = await database.get('SELECT id FROM users WHERE id = ?', [userId]);
+    if (!userExists) {
+      return res.status(404).json({ message: 'User not found', data: [] });
+    }
+    
     const items = await database.all(
-      'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC',
+      'SELECT * FROM notifications WHERE user_id = ? ORDER BY is_read ASC, created_at DESC',
       [userId]
     );
+    logger.info('Notifications retrieved', { userId, count: items.length });
     res.json({ message: 'Notifications retrieved', data: items });
   } catch (error) {
-    logger.error('List notifications error', { error: error.message });
-    res.status(500).json({ message: 'Failed to retrieve notifications' });
+    logger.error('List notifications error', { error: error.message, stack: error.stack, userId: req.params.userId });
+    res.status(500).json({ message: 'Failed to retrieve notifications', error: error.message });
   }
 };
 

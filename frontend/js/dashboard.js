@@ -321,29 +321,49 @@ async function loadBillsData() {
 async function loadNotificationsData() {
     try {
         const notificationsList = document.getElementById('notificationsList');
+        if (!notificationsList) {
+            console.error('notificationsList element not found');
+            return;
+        }
+        
         notificationsList.innerHTML = '<p class="text-center">Loading notifications...</p>';
         const userId = currentUser.id;
         const response = await notificationsAPI.listByUser(userId);
-        if (response.data.length === 0) {
-            notificationsList.innerHTML = '<p class="text-center">No notifications</p>';
+        
+        if (!response || !response.data || response.data.length === 0) {
+            notificationsList.innerHTML = '<p class="text-center">No notifications found</p>';
             return;
         }
+        
         notificationsList.innerHTML = '';
         response.data.forEach(n => {
             const div = document.createElement('div');
-            div.className = 'notification-item';
+            div.className = `notification-item ${n.is_read ? '' : 'unread'}`;
+            
+            const typeIcon = {
+                'payment_due': '💰',
+                'payment_received': '✅',
+                'membership_expiring': '⏰',
+                'gym_update': '📢',
+                'general': '📬'
+            }[n.type] || '📬';
+            
             div.innerHTML = `
                 <div class="notification-content">
-                    <h4>${n.title}</h4>
+                    <h4>${typeIcon} ${n.title}</h4>
                     <p>${n.message}</p>
                     <small class="text-light">${formatDate(n.created_at || n.scheduled_date || new Date())}</small>
                 </div>
-                <button class="btn btn-small" onclick="markNotificationRead('${n.id}')">Mark read</button>
+                ${!n.is_read ? `<button type="button" class="btn btn-small" onclick="markNotificationRead('${n.id}')">Mark Read</button>` : '<span class="text-light">Read</span>'}
             `;
             notificationsList.appendChild(div);
         });
     } catch (error) {
         console.error('Failed to load notifications:', error);
+        const notificationsList = document.getElementById('notificationsList');
+        if (notificationsList) {
+            notificationsList.innerHTML = '<p class="text-center text-error">Failed to load notifications. Please try again.</p>';
+        }
     }
 }
 
@@ -506,32 +526,61 @@ function setupForms() {
 function setupNotificationsPage() {
     const refreshBtn = document.getElementById('refreshNotificationsBtn');
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => loadNotificationsData());
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = 'Refreshing...';
+            await loadNotificationsData();
+            await refreshUnreadCount();
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = 'Refresh';
+        });
     }
+    
     const seedBtn = document.getElementById('seedNotificationsBtn');
     if (seedBtn) {
+        // Hide seed button for non-admins
+        if (currentUser.role !== 'admin') {
+            seedBtn.style.display = 'none';
+        }
+        
         seedBtn.addEventListener('click', async () => {
+            if (!confirm('This will create monthly payment reminders for all members. Continue?')) {
+                return;
+            }
+            
             try {
-                await notificationsAPI.seedMonthly();
-                loadNotificationsData();
-                refreshUnreadCount();
+                seedBtn.disabled = true;
+                seedBtn.textContent = 'Seeding...';
+                
+                const result = await notificationsAPI.seedMonthly();
+                alert(`Successfully created ${result.count || 0} notifications`);
+                
+                await loadNotificationsData();
+                await refreshUnreadCount();
             } catch (error) {
-                console.error('Seed notifications failed', error);
+                console.error('Seed notifications failed:', error);
+                alert('Failed to seed notifications: ' + (error.message || 'Unknown error'));
+            } finally {
+                seedBtn.disabled = false;
+                seedBtn.textContent = 'Seed Monthly Reminders';
             }
         });
     }
-    // initial load when page switches
 }
 
 async function markNotificationRead(id) {
     try {
         await notificationsAPI.markRead(id);
-        loadNotificationsData();
-        refreshUnreadCount();
+        await loadNotificationsData();
+        await refreshUnreadCount();
     } catch (error) {
-        console.error('Failed to mark notification', error);
+        console.error('Failed to mark notification read:', error);
+        alert('Failed to mark notification as read');
     }
 }
+
+// Expose globally for onclick handlers
+window.markNotificationRead = markNotificationRead;
 
 function getMemberId() {
     // Get member ID from user data
@@ -657,15 +706,24 @@ function setupReportExport() {
     if (!exportBtn) return;
     exportBtn.addEventListener('click', async () => {
         try {
+            exportBtn.disabled = true;
+            exportBtn.textContent = '📊 Exporting...';
+            
             const blob = await reportsAPI.exportBills();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'bills_report.csv';
+            a.download = `gym_report_${Date.now()}.csv`;
             a.click();
             URL.revokeObjectURL(url);
+            
+            exportBtn.disabled = false;
+            exportBtn.textContent = '📊 Export Report';
         } catch (error) {
             console.error('Export report failed', error);
+            exportBtn.disabled = false;
+            exportBtn.textContent = '📊 Export Report';
+            alert('Failed to generate report. Please try again.');
         }
     });
 }
@@ -673,47 +731,115 @@ function setupReportExport() {
 function setupCreateBill() {
     const generateBillBtn = document.getElementById('generateBillBtn');
     if (!generateBillBtn) return;
-    generateBillBtn.addEventListener('click', () => {
+    generateBillBtn.addEventListener('click', async () => {
+        // Fetch members and their payments
+        let membersOptions = '';
+        let membersData = [];
+        
+        try {
+            const response = await api.get('/members?limit=1000');
+            membersData = response.data || [];
+            if (membersData.length === 0) {
+                alert('No members found. Please add members first.');
+                return;
+            }
+            membersOptions = membersData.map(m => 
+                `<option value="${m.id}">${m.first_name || ''} ${m.last_name || ''} (${m.email})</option>`
+            ).join('');
+        } catch (error) {
+            console.error('Failed to load members:', error);
+            alert('Failed to load members list');
+            return;
+        }
+        
         openModal(`
             <h3>Create Bill</h3>
             <div class="message" id="createBillMessage"></div>
             <form id="createBillForm" class="form-grid">
                 <div class="form-group">
-                    <label>Member ID</label>
-                    <input type="text" id="billMemberId" required>
+                    <label>Select Member *</label>
+                    <select id="billMemberId" required>
+                        <option value="">-- Select Member --</option>
+                        ${membersOptions}
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label>Payment ID</label>
-                    <input type="text" id="billPaymentId" required>
+                    <label>Select Payment *</label>
+                    <select id="billPaymentId" required>
+                        <option value="">-- First select a member --</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Amount</label>
-                    <input type="number" id="billAmount" required>
+                    <input type="number" step="0.01" id="billAmount" required>
                 </div>
                 <div class="form-group">
                     <label>Tax %</label>
-                    <input type="number" id="billTax" value="0">
+                    <input type="number" step="0.01" id="billTax" value="0">
                 </div>
-                <button type="submit" class="btn btn-primary">Create</button>
+                <button type="submit" class="btn btn-primary">Create Bill</button>
             </form>
         `);
+
+        const memberSelect = document.getElementById('billMemberId');
+        const paymentSelect = document.getElementById('billPaymentId');
+        const amountInput = document.getElementById('billAmount');
+        
+        // When member is selected, load their payments
+        memberSelect.addEventListener('change', async (e) => {
+            const memberId = e.target.value;
+            if (!memberId) {
+                paymentSelect.innerHTML = '<option value="">-- First select a member --</option>';
+                return;
+            }
+            
+            try {
+                paymentSelect.innerHTML = '<option value="">Loading payments...</option>';
+                const paymentsResponse = await paymentsAPI.getByMember(memberId, 1, 100);
+                const payments = paymentsResponse.data || [];
+                
+                if (payments.length === 0) {
+                    paymentSelect.innerHTML = '<option value="">No payments found for this member</option>';
+                    return;
+                }
+                
+                paymentSelect.innerHTML = '<option value="">-- Select Payment --</option>' + 
+                    payments.map(p => 
+                        `<option value="${p.id}">$${parseFloat(p.amount || 0).toFixed(2)} - ${p.payment_method} (${p.status})</option>`
+                    ).join('');
+                
+                // Auto-fill amount from first payment
+                if (payments[0] && payments[0].amount) {
+                    amountInput.value = parseFloat(payments[0].amount).toFixed(2);
+                }
+            } catch (error) {
+                console.error('Failed to load payments:', error);
+                paymentSelect.innerHTML = '<option value="">Failed to load payments</option>';
+            }
+        });
 
         const form = document.getElementById('createBillForm');
         const msg = document.getElementById('createBillMessage');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = form.querySelector('button[type="submit"]');
             try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating...';
+                
                 await billsAPI.create({
                     member_id: document.getElementById('billMemberId').value,
                     payment_id: document.getElementById('billPaymentId').value,
                     amount: parseFloat(document.getElementById('billAmount').value),
                     tax: parseFloat(document.getElementById('billTax').value || '0'),
                 });
-                showMessage(msg, 'Bill created', 'success');
+                showMessage(msg, 'Bill created successfully', 'success');
                 await loadBillsData();
                 setTimeout(closeModal, 800);
             } catch (error) {
                 showMessage(msg, error.message || 'Failed to create bill', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Bill';
             }
         });
     });
@@ -723,30 +849,45 @@ function setupStoreAndDiets() {
     // Supplements list
     const supplementsList = document.getElementById('supplementsList');
     if (supplementsList) {
+        supplementsList.innerHTML = '<p class="text-center text-light">Loading supplements...</p>';
         storeAPI.getAll().then((res) => {
             supplementsList.innerHTML = '';
-            if (!res.data.length) {
-                supplementsList.innerHTML = 'No supplements';
+            if (!res.data || res.data.length === 0) {
+                supplementsList.innerHTML = '<p class="text-center text-light">No supplements available</p>';
                 return;
             }
-            res.data.forEach((i) => {
+            res.data.forEach((item) => {
                 const div = document.createElement('div');
-                div.className = 'list-row';
+                div.className = 'data-card';
+                const stockBadge = item.stock > 0 
+                    ? `<span class="badge badge-success">In Stock: ${item.stock}</span>`
+                    : `<span class="badge badge-error">Out of Stock</span>`;
                 div.innerHTML = `
-                    <span>${i.name} - $${i.price}</span>
-                    <span>
-                        <button class="btn btn-small" onclick="editSupplement('${i.id}')">Edit</button>
-                        <button class="btn btn-small btn-danger" onclick="deleteSupplement('${i.id}')">Delete</button>
-                    </span>
+                    <div class="data-card-header">
+                        <h4>💊 ${item.name}</h4>
+                        ${stockBadge}
+                    </div>
+                    <div class="data-card-body">
+                        <p class="text-light">${item.description || 'No description'}</p>
+                        <p class="data-price">$${parseFloat(item.price || 0).toFixed(2)}</p>
+                    </div>
+                    <div class="data-card-actions">
+                        <button type="button" class="btn btn-small" onclick="editSupplement('${item.id}')">Edit</button>
+                        <button type="button" class="btn btn-small btn-danger" onclick="deleteSupplement('${item.id}')">Delete</button>
+                    </div>
                 `;
                 supplementsList.appendChild(div);
             });
-        }).catch(() => { supplementsList.innerHTML = 'Failed to load'; });
+        }).catch((error) => { 
+            console.error('Failed to load supplements:', error);
+            supplementsList.innerHTML = '<p class="text-center text-error">Failed to load supplements</p>'; 
+        });
     }
 
-    // Diets list for current member
+    // Diets list
     const dietsList = document.getElementById('dietsList');
     if (dietsList) {
+        dietsList.innerHTML = '<p class="text-center text-light">Loading diets...</p>';
         const memberId = getMemberId();
         const fetcher = currentUser.role === 'admin'
             ? dietAPI.listAll()
@@ -754,24 +895,57 @@ function setupStoreAndDiets() {
 
         fetcher.then((res) => {
             dietsList.innerHTML = '';
-            if (!res.data.length) {
-                dietsList.innerHTML = memberId ? 'No diets' : 'No diets available';
+            if (!res.data || res.data.length === 0) {
+                dietsList.innerHTML = '<p class="text-center text-light">No diet plans available</p>';
                 return;
             }
-            res.data.forEach((i) => {
+            res.data.forEach((item) => {
                 const div = document.createElement('div');
-                div.className = 'list-row';
-                const memberLabel = currentUser.role === 'admin' ? ` (Member: ${i.member_id || 'N/A'})` : '';
+                div.className = 'data-card';
+                
+                // For admin, always show member info with multiple fallbacks
+                let memberInfo = '';
+                if (currentUser.role === 'admin') {
+                    let displayName = 'Unknown Member';
+                    
+                    // Try to build full name
+                    if (item.first_name || item.last_name) {
+                        displayName = `${item.first_name || ''} ${item.last_name || ''}`.trim();
+                    } 
+                    // Fallback to email
+                    else if (item.email) {
+                        displayName = item.email;
+                    } 
+                    // Fallback to member_id
+                    else if (item.member_id) {
+                        displayName = `Member: ${item.member_id.substring(0, 8)}...`;
+                    }
+                    
+                    memberInfo = `<span class="badge badge-info">👤 ${displayName}</span>`;
+                    console.log('Diet item:', item); // Debug log
+                }
+                
                 div.innerHTML = `
-                    <span>${i.title || 'Plan'}${memberLabel}: ${i.plan || ''}</span>
-                    <span>
-                        <button class="btn btn-small" onclick="editDiet('${i.id}')">Edit</button>
-                        <button class="btn btn-small btn-danger" onclick="deleteDiet('${i.id}')">Delete</button>
-                    </span>
+                    <div class="data-card-header">
+                        <h4>🥗 ${item.title || 'Diet Plan'}</h4>
+                        ${memberInfo}
+                    </div>
+                    <div class="data-card-body">
+                        <p><strong>Plan:</strong> ${item.plan || 'No details'}</p>
+                        ${item.notes ? `<p class="text-light"><strong>Notes:</strong> ${item.notes}</p>` : ''}
+                        <small class="text-light">Created: ${formatDate(item.created_at || new Date())}</small>
+                    </div>
+                    <div class="data-card-actions">
+                        <button type="button" class="btn btn-small" onclick="editDiet('${item.id}')">Edit</button>
+                        <button type="button" class="btn btn-small btn-danger" onclick="deleteDiet('${item.id}')">Delete</button>
+                    </div>
                 `;
                 dietsList.appendChild(div);
             });
-        }).catch(() => { dietsList.innerHTML = 'Failed to load'; });
+        }).catch((error) => { 
+            console.error('Failed to load diets:', error);
+            dietsList.innerHTML = '<p class="text-center text-error">Failed to load diet plans</p>'; 
+        });
     }
 }
 
@@ -783,29 +957,35 @@ if (addSupplementBtn) {
             <h3>Add Supplement</h3>
             <div class="message" id="suppMsg"></div>
             <form id="suppForm" class="form-grid">
-                <div class="form-group"><label>Name</label><input id="suppName" required></div>
-                <div class="form-group"><label>Description</label><input id="suppDesc"></div>
-                <div class="form-group"><label>Price</label><input type="number" id="suppPrice" required></div>
-                <div class="form-group"><label>Stock</label><input type="number" id="suppStock" value="0"></div>
-                <button class="btn btn-primary" type="submit">Save</button>
+                <div class="form-group"><label>Name *</label><input id="suppName" placeholder="e.g. Whey Protein" required></div>
+                <div class="form-group"><label>Description</label><input id="suppDesc" placeholder="Product description"></div>
+                <div class="form-group"><label>Price *</label><input type="number" id="suppPrice" step="0.01" min="0" placeholder="0.00" required></div>
+                <div class="form-group"><label>Stock</label><input type="number" id="suppStock" min="0" value="0" placeholder="0"></div>
+                <button class="btn btn-primary" type="submit">Save Supplement</button>
             </form>
         `);
         const form = document.getElementById('suppForm');
         const msg = document.getElementById('suppMsg');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = form.querySelector('button[type="submit"]');
             try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving...';
+                
                 await storeAPI.create({
                     name: document.getElementById('suppName').value,
                     description: document.getElementById('suppDesc').value,
                     price: parseFloat(document.getElementById('suppPrice').value),
                     stock: parseInt(document.getElementById('suppStock').value || '0', 10),
                 });
-                showMessage(msg, 'Supplement added', 'success');
+                showMessage(msg, 'Supplement added successfully', 'success');
                 setupStoreAndDiets();
                 setTimeout(closeModal, 800);
             } catch (error) {
                 showMessage(msg, error.message || 'Failed to add supplement', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Supplement';
             }
         });
     });
@@ -814,34 +994,64 @@ if (addSupplementBtn) {
 // Diet creation
 const addDietBtn = document.getElementById('addDietBtn');
 if (addDietBtn) {
-    addDietBtn.addEventListener('click', () => {
+    addDietBtn.addEventListener('click', async () => {
+        // Fetch members list for dropdown
+        let membersOptions = '';
+        try {
+            const membersData = await api.get('/members?limit=1000');
+            const members = membersData.data || [];
+            if (members.length === 0) {
+                alert('No members found. Please add members first.');
+                return;
+            }
+            membersOptions = members.map(m => 
+                `<option value="${m.id}">${m.first_name || ''} ${m.last_name || ''} (${m.email})</option>`
+            ).join('');
+        } catch (error) {
+            console.error('Failed to load members:', error);
+            alert('Failed to load members list');
+            return;
+        }
+        
         openModal(`
-            <h3>Add Diet</h3>
+            <h3>Add Diet Plan</h3>
             <div class="message" id="dietMsg"></div>
             <form id="dietForm" class="form-grid">
-                <div class="form-group"><label>Member ID</label><input id="dietMemberId" value="${getMemberId() || ''}" required></div>
-                <div class="form-group"><label>Title</label><input id="dietTitle"></div>
-                <div class="form-group"><label>Plan</label><textarea id="dietPlan"></textarea></div>
-                <div class="form-group"><label>Notes</label><textarea id="dietNotes"></textarea></div>
-                <button class="btn btn-primary" type="submit">Save</button>
+                <div class="form-group">
+                    <label>Select Member *</label>
+                    <select id="dietMemberId" required>
+                        <option value="">-- Select Member --</option>
+                        ${membersOptions}
+                    </select>
+                </div>
+                <div class="form-group"><label>Title</label><input id="dietTitle" placeholder="e.g. Weight Loss Plan"></div>
+                <div class="form-group"><label>Plan *</label><textarea id="dietPlan" rows="4" placeholder="Meal plan details..." required></textarea></div>
+                <div class="form-group"><label>Notes</label><textarea id="dietNotes" rows="2" placeholder="Additional notes..."></textarea></div>
+                <button class="btn btn-primary" type="submit">Save Diet Plan</button>
             </form>
         `);
         const form = document.getElementById('dietForm');
         const msg = document.getElementById('dietMsg');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = form.querySelector('button[type="submit"]');
             try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving...';
+                
                 await dietAPI.create({
                     member_id: document.getElementById('dietMemberId').value,
                     title: document.getElementById('dietTitle').value,
                     plan: document.getElementById('dietPlan').value,
                     notes: document.getElementById('dietNotes').value,
                 });
-                showMessage(msg, 'Diet added', 'success');
+                showMessage(msg, 'Diet plan added successfully', 'success');
                 setupStoreAndDiets();
                 setTimeout(closeModal, 800);
             } catch (error) {
-                showMessage(msg, error.message || 'Failed to add diet', 'error');
+                showMessage(msg, error.message || 'Failed to add diet plan', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Diet Plan';
             }
         });
     });
@@ -850,19 +1060,35 @@ if (addDietBtn) {
 function setupFeePackages() {
     const listEl = document.getElementById('feePackagesList');
     if (listEl) {
+        listEl.innerHTML = '<p class="text-center text-light">Loading fee packages...</p>';
         feePackagesAPI.getAll().then((res) => {
             listEl.innerHTML = '';
-            if (!res.data.length) {
-                listEl.innerHTML = 'No fee packages';
+            if (!res.data || res.data.length === 0) {
+                listEl.innerHTML = '<p class="text-center text-light">No fee packages available</p>';
                 return;
             }
-            res.data.forEach((p) => {
+            res.data.forEach((pkg) => {
                 const div = document.createElement('div');
-                div.className = 'list-row';
-                div.innerHTML = `${p.name} - $${p.monthly_fee} (${p.duration_days || '-'} days) <button class="btn btn-small btn-danger" onclick="deleteFeePackage('${p.id}')">Delete</button>`;
+                div.className = 'data-card';
+                div.innerHTML = `
+                    <div class="data-card-header">
+                        <h4>💳 ${pkg.name}</h4>
+                        <span class="badge badge-primary">$${parseFloat(pkg.monthly_fee || 0).toFixed(2)}/month</span>
+                    </div>
+                    <div class="data-card-body">
+                        <p class="text-light">${pkg.description || 'No description'}</p>
+                        <p><strong>Duration:</strong> ${pkg.duration_days || 'N/A'} days</p>
+                    </div>
+                    <div class="data-card-actions">
+                        <button type="button" class="btn btn-small btn-danger" onclick="deleteFeePackage('${pkg.id}')">Delete</button>
+                    </div>
+                `;
                 listEl.appendChild(div);
             });
-        }).catch(() => { listEl.innerHTML = 'Failed to load fee packages'; });
+        }).catch((error) => { 
+            console.error('Failed to load fee packages:', error);
+            listEl.innerHTML = '<p class="text-center text-error">Failed to load fee packages</p>'; 
+        });
     }
 
     const addBtn = document.getElementById('addFeePackageBtn');
@@ -904,52 +1130,134 @@ function setupFeePackages() {
 function setupSubscriptions() {
     const listEl = document.getElementById('subscriptionsList');
     const memberId = getMemberId();
-    if (listEl && memberId) {
+    if (listEl) {
+        if (!memberId) {
+            listEl.innerHTML = '<p class="text-center text-light">No member ID available</p>';
+            return;
+        }
+        listEl.innerHTML = '<p class="text-center text-light">Loading subscriptions...</p>';
         subscriptionsAPI.listByMember(memberId).then((res) => {
             listEl.innerHTML = '';
-            if (!res.data.length) {
-                listEl.innerHTML = 'No subscriptions';
+            if (!res.data || res.data.length === 0) {
+                listEl.innerHTML = '<p class="text-center text-light">No active subscriptions</p>';
                 return;
             }
-            res.data.forEach((s) => {
+            res.data.forEach((sub) => {
                 const div = document.createElement('div');
-                div.className = 'list-row';
-                div.textContent = `${s.package_name} - ${s.status}`;
+                div.className = 'data-card';
+                const statusBadge = sub.status === 'active' 
+                    ? '<span class="badge badge-success">Active</span>'
+                    : sub.status === 'expired'
+                    ? '<span class="badge badge-error">Expired</span>'
+                    : '<span class="badge badge-warning">Pending</span>';
+                
+                div.innerHTML = `
+                    <div class="data-card-header">
+                        <h4>📋 ${sub.package_name || 'Subscription'}</h4>
+                        ${statusBadge}
+                    </div>
+                    <div class="data-card-body">
+                        <p><strong>Start:</strong> ${formatDate(sub.start_date || new Date())}</p>
+                        ${sub.end_date ? `<p><strong>End:</strong> ${formatDate(sub.end_date)}</p>` : ''}
+                    </div>
+                `;
                 listEl.appendChild(div);
             });
-        }).catch(() => { listEl.innerHTML = 'Failed to load subscriptions'; });
+        }).catch((error) => { 
+            console.error('Failed to load subscriptions:', error);
+            listEl.innerHTML = '<p class="text-center text-error">Failed to load subscriptions</p>'; 
+        });
     }
 
     const addBtn = document.getElementById('addSubscriptionBtn');
     if (addBtn) {
-        addBtn.addEventListener('click', () => {
+        addBtn.addEventListener('click', async () => {
+            // Fetch members and fee packages
+            let membersOptions = '';
+            let packagesOptions = '';
+            
+            try {
+                const [membersRes, packagesRes] = await Promise.all([
+                    api.get('/members?limit=1000'),
+                    feePackagesAPI.getAll()
+                ]);
+                
+                const members = membersRes.data || [];
+                const packages = packagesRes.data || [];
+                
+                if (members.length === 0) {
+                    alert('No members found. Please add members first.');
+                    return;
+                }
+                if (packages.length === 0) {
+                    alert('No fee packages found. Please create fee packages first.');
+                    return;
+                }
+                
+                membersOptions = members.map(m => 
+                    `<option value="${m.id}">${m.first_name || ''} ${m.last_name || ''} (${m.email})</option>`
+                ).join('');
+                
+                packagesOptions = packages.map(p => 
+                    `<option value="${p.id}">${p.name} - $${parseFloat(p.monthly_fee || 0).toFixed(2)}/month</option>`
+                ).join('');
+            } catch (error) {
+                console.error('Failed to load data:', error);
+                alert('Failed to load members or fee packages');
+                return;
+            }
+            
             openModal(`
                 <h3>Assign Subscription</h3>
                 <div class="message" id="subMsg"></div>
                 <form id="subForm" class="form-grid">
-                    <div class="form-group"><label>Member ID</label><input id="subMemberId" value="${memberId || ''}" required></div>
-                    <div class="form-group"><label>Fee Package ID</label><input id="subPkgId" required></div>
-                    <div class="form-group"><label>Start Date</label><input type="date" id="subStart"></div>
-                    <div class="form-group"><label>End Date</label><input type="date" id="subEnd"></div>
-                    <button class="btn btn-primary" type="submit">Assign</button>
+                    <div class="form-group">
+                        <label>Select Member *</label>
+                        <select id="subMemberId" required>
+                            <option value="">-- Select Member --</option>
+                            ${membersOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Select Fee Package *</label>
+                        <select id="subPkgId" required>
+                            <option value="">-- Select Package --</option>
+                            ${packagesOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="subStart" value="${new Date().toISOString().split('T')[0]}">
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" id="subEnd">
+                    </div>
+                    <button class="btn btn-primary" type="submit">Assign Subscription</button>
                 </form>
             `);
             const form = document.getElementById('subForm');
             const msg = document.getElementById('subMsg');
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const submitBtn = form.querySelector('button[type="submit"]');
                 try {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Assigning...';
+                    
                     await subscriptionsAPI.assign({
                         member_id: document.getElementById('subMemberId').value,
                         fee_package_id: document.getElementById('subPkgId').value,
                         start_date: document.getElementById('subStart').value,
                         end_date: document.getElementById('subEnd').value,
                     });
-                    showMessage(msg, 'Subscription assigned', 'success');
+                    showMessage(msg, 'Subscription assigned successfully', 'success');
                     setupSubscriptions();
                     setTimeout(closeModal, 800);
                 } catch (error) {
-                    showMessage(msg, error.message || 'Failed to assign', 'error');
+                    showMessage(msg, error.message || 'Failed to assign subscription', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Assign Subscription';
                 }
             });
         });
@@ -1059,3 +1367,10 @@ async function editDiet(id) {
         console.error('Edit diet failed', error);
     }
 }
+
+// Expose global functions for onclick handlers
+window.editSupplement = editSupplement;
+window.deleteSupplement = deleteSupplement;
+window.editDiet = editDiet;
+window.deleteDiet = deleteDiet;
+window.deleteFeePackage = deleteFeePackage;

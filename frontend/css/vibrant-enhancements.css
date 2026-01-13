@@ -1,0 +1,491 @@
+/* ============================================
+   VIBRANT & AESTHETIC ENHANCEMENTS
+   CEO-IMPRESSING DESIGN SYSTEM
+   ============================================ */
+
+/* Enhanced CSS Variables */
+:root {
+    --accent-color: #8b5cf6;
+    --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+}
+
+/* Animated Background Overlay */
+body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%) !important;
+    background-attachment: fixed !important;
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(244, 114, 182, 0.15) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+@keyframes backgroundShift {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+/* Container with proper z-index */
+.container {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Enhanced Hero Section */
+.hero-section {
+    padding: 6rem 2rem !important;
+    position: relative;
+    z-index: 1;
+    animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hero-section h1 {
+    font-size: 4rem !important;
+    font-weight: 900 !important;
+    margin-bottom: 1.5rem !important;
+    color: white !important;
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2) !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.1 !important;
+}
+
+.hero-section p {
+    color: rgba(255, 255, 255, 0.95) !important;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Glassmorphism for Features Section */
+.features-section {
+    padding: 6rem 2rem !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(20px) !important;
+    position: relative;
+    z-index: 1;
+}
+
+.features-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.5), transparent);
+}
+
+/* Enhanced Section Titles */
+.section-title {
+    font-size: 3rem !important;
+    font-weight: 800 !important;
+    margin-bottom: 4rem !important;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    letter-spacing: -0.02em !important;
+    position: relative;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    border-radius: 2px;
+}
+
+/* Vibrant Feature Cards */
+.feature-card {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px) !important;
+    padding: 2.5rem !important;
+    border-radius: 1.5rem !important;
+    border: 2px solid rgba(139, 92, 246, 0.1) !important;
+    position: relative;
+    overflow: hidden;
+    animation: fadeInUp 0.8s ease-out backwards;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color), var(--secondary-color));
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+}
+
+.feature-card:hover::before {
+    transform: translateX(0);
+}
+
+.feature-card:hover {
+    transform: translateY(-10px) scale(1.02) !important;
+    box-shadow: 0 25px 50px rgba(139, 92, 246, 0.2) !important;
+    border-color: var(--accent-color) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.feature-card:nth-child(1) { animation-delay: 0.1s; }
+.feature-card:nth-child(2) { animation-delay: 0.2s; }
+.feature-card:nth-child(3) { animation-delay: 0.3s; }
+.feature-card:nth-child(4) { animation-delay: 0.4s; }
+.feature-card:nth-child(5) { animation-delay: 0.5s; }
+.feature-card:nth-child(6) { animation-delay: 0.6s; }
+
+/* Floating Icon Animation */
+.feature-icon {
+    font-size: 3.5rem !important;
+    margin-bottom: 1.5rem !important;
+    display: inline-block !important;
+    animation: float 3s ease-in-out infinite;
+    filter: drop-shadow(0 4px 8px rgba(139, 92, 246, 0.3)) !important;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.feature-card:hover .feature-icon {
+    animation: bounce 0.6s ease !important;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px) scale(1.1); }
+}
+
+/* Gradient Text for Feature Titles */
+.feature-card h3 {
+    background: linear-gradient(135deg, var(--text-dark) 0%, var(--primary-color) 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+}
+
+/* Enhanced Buttons */
+.cta-buttons {
+    animation: fadeInUp 0.8s ease-out 0.3s backwards !important;
+    gap: 1.5rem !important;
+}
+
+.btn {
+    padding: 1rem 2.5rem !important;
+    border-radius: 50px !important;
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.02em !important;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #fff 0%, #f0f9ff 100%) !important;
+    color: var(--primary-color) !important;
+    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3) !important;
+}
+
+.btn-primary:hover {
+    transform: translateY(-4px) scale(1.05) !important;
+    box-shadow: 0 20px 40px rgba(255, 255, 255, 0.4) !important;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border: 2px solid rgba(255, 255, 255, 0.5) !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.btn-secondary:hover {
+    background: white !important;
+    color: var(--primary-color) !important;
+    border-color: white !important;
+    transform: translateY(-4px) scale(1.05) !important;
+    box-shadow: 0 20px 40px rgba(255, 255, 255, 0.3) !important;
+}
+
+/* ============================================
+   DASHBOARD ENHANCEMENTS
+   ============================================ */
+
+/* Glassmorphic Sidebar */
+.sidebar {
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(20px) !important;
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.2) !important;
+    border-right: 1px solid rgba(139, 92, 246, 0.1) !important;
+}
+
+.sidebar-header {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, transparent 100%) !important;
+    border-bottom: 2px solid rgba(139, 92, 246, 0.1) !important;
+}
+
+.sidebar-header h2 {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.02em !important;
+}
+
+/* Enhanced Navigation Items */
+.nav-item {
+    border-radius: 0 50px 50px 0 !important;
+    margin: 0.25rem 0 !important;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    position: relative;
+}
+
+.nav-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 0;
+    background: linear-gradient(180deg, var(--primary-color), var(--accent-color));
+    border-radius: 0 4px 4px 0;
+    transition: height 0.3s ease;
+}
+
+.nav-item:hover {
+    background: linear-gradient(90deg, rgba(139, 92, 246, 0.1), transparent) !important;
+    color: var(--accent-color) !important;
+    transform: translateX(5px) !important;
+}
+
+.nav-item:hover::before {
+    height: 60%;
+}
+
+.nav-item.active {
+    background: linear-gradient(90deg, rgba(139, 92, 246, 0.15) 0%, rgba(14, 165, 233, 0.1) 100%) !important;
+    color: var(--accent-color) !important;
+    font-weight: 700 !important;
+}
+
+.nav-item.active::before {
+    height: 100%;
+}
+
+/* Main Content Area */
+.main-content {
+    position: relative;
+    z-index: 1;
+}
+
+/* Glassmorphic Top Header */
+.top-header {
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(20px) !important;
+    border-radius: 1.5rem !important;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    animation: slideDown 0.5s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Enhanced Cards */
+.card {
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(20px) !important;
+    border-radius: 1.5rem !important;
+    padding: 2.5rem !important;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    transition: all 0.4s ease !important;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.card:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 12px 48px rgba(139, 92, 246, 0.25) !important;
+}
+
+.card h2 {
+    font-size: 2rem !important;
+    margin-bottom: 2rem !important;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em !important;
+    position: relative;
+    padding-bottom: 1rem !important;
+}
+
+.card h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    border-radius: 2px;
+}
+
+/* Welcome Card with Rotating Glow */
+.welcome-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%) !important;
+    box-shadow: 0 20px 60px rgba(139, 92, 246, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.welcome-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Enhanced Quick Cards */
+.quick-card {
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(10px) !important;
+    border-radius: 1.5rem !important;
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.1) !important;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    border: 1px solid rgba(139, 92, 246, 0.1) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.quick-card:hover::before {
+    transform: scaleX(1);
+}
+
+.quick-card:hover {
+    transform: translateY(-8px) scale(1.03) !important;
+    box-shadow: 0 12px 35px rgba(139, 92, 246, 0.2) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Enhanced Dashboard Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%) !important;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3) !important;
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4) !important;
+}
+
+/* Data Cards Enhancements */
+.data-card {
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(10px) !important;
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.1) !important;
+    transition: all 0.4s ease !important;
+}
+
+.data-card:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 8px 30px rgba(139, 92, 246, 0.2) !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-section h1 {
+        font-size: 2.5rem !important;
+    }
+    
+    .section-title {
+        font-size: 2rem !important;
+    }
+    
+    body::before {
+        animation: none;
+    }
+}

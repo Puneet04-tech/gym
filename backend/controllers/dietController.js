@@ -16,14 +16,21 @@ const validateDiet = ({ member_id, title, plan }) => {
 exports.listAll = async (_req, res) => {
   try {
     const items = await database.all(`
-      SELECT d.*, m.user_id
+      SELECT d.*, 
+             m.user_id,
+             u.first_name,
+             u.last_name,
+             u.email
       FROM diets d
       LEFT JOIN members m ON d.member_id = m.id
+      LEFT JOIN users u ON m.user_id = u.id
+      ORDER BY d.created_at DESC
     `);
+    logger.info('Diets retrieved', { count: items.length, sample: items[0] });
     res.json({ message: 'Diets retrieved', data: items });
   } catch (error) {
-    logger.error('List all diets error', { error: error.message });
-    res.status(500).json({ message: 'Failed to retrieve diets' });
+    logger.error('List all diets error', { error: error.message, stack: error.stack });
+    res.status(500).json({ message: 'Failed to retrieve diets', error: error.message });
   }
 };
 
@@ -47,6 +54,17 @@ exports.create = async (req, res) => {
     if (!validation.valid) {
       return res.status(400).json({ message: validation.message });
     }
+    
+    // Verify member exists
+    const memberExists = await database.get(
+      'SELECT id FROM members WHERE id = ?',
+      [member_id.trim()]
+    );
+    
+    if (!memberExists) {
+      return res.status(400).json({ message: 'Member not found. Please select a valid member.' });
+    }
+    
     const id = generateId();
     await database.run(
       `INSERT INTO diets (id, member_id, title, plan, notes)
@@ -55,8 +73,8 @@ exports.create = async (req, res) => {
     );
     res.status(201).json({ message: 'Diet created', id });
   } catch (error) {
-    logger.error('Create diet error', { error: error.message });
-    res.status(500).json({ message: 'Failed to create diet' });
+    logger.error('Create diet error', { error: error.message, stack: error.stack, body: req.body });
+    res.status(500).json({ message: 'Failed to create diet', error: error.message });
   }
 };
 

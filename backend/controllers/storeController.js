@@ -61,8 +61,8 @@ exports.create = async (req, res) => {
     );
     res.status(201).json({ message: 'Supplement created', id });
   } catch (error) {
-    logger.error('Create supplement error', { error: error.message });
-    res.status(500).json({ message: 'Failed to create supplement' });
+    logger.error('Create supplement error', { error: error.message, stack: error.stack, body: req.body });
+    res.status(500).json({ message: 'Failed to create supplement', error: error.message });
   }
 };
 

@@ -3,12 +3,21 @@ const path = require('path');
 const { logger } = require('./logger');
 const fs = require('fs');
 
-const dbPath = process.env.DB_PATH || path.join(__dirname, '../database/gym_management.db');
+// Use absolute path to ensure data persists
+const dbPath = process.env.DB_PATH 
+  ? (path.isAbsolute(process.env.DB_PATH) 
+      ? process.env.DB_PATH 
+      : path.resolve(process.cwd(), process.env.DB_PATH))
+  : path.join(__dirname, '../database/gym_management.db');
+
 // Ensure directory exists for SQLite file
 const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
+
+// Log the actual database path being used
+console.log('SQLite database path:', dbPath);
 
 class Database {
   constructor() {

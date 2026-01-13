@@ -6,6 +6,7 @@
     <title>Dashboard - Gym Management System</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/vibrant-enhancements.css">
 </head>
 <body>
     <div class="dashboard">
@@ -204,16 +205,16 @@
                 <!-- Bills Page -->
                 <section id="billsPage" class="page">
                     <div class="card">
-                        <h2>Bills & Receipts</h2>
+                        <h2>Bills &amp; Receipts</h2>
                         <div class="table-responsive">
                             <table class="table">
                                 <thead>
                                     <tr>
-                                        <th>Bill Number</th>
-                                        <th>Date</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Action</th>
+                                        <th scope="col">Bill Number</th>
+                                        <th scope="col">Date</th>
+                                        <th scope="col">Amount</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="billsTable">
@@ -230,9 +231,9 @@
                 <section id="notificationsPage" class="page">
                     <div class="card">
                         <h2>Notifications</h2>
-                        <div class="flex-between" style="margin-bottom: 10px; gap: 8px;">
-                            <button id="seedNotificationsBtn" class="btn btn-secondary">Seed Monthly Reminders</button>
-                            <button id="refreshNotificationsBtn" class="btn btn-primary">Refresh</button>
+                        <div class="flex-between notif-actions">
+                            <button type="button" id="seedNotificationsBtn" class="btn btn-secondary">Seed Monthly Reminders</button>
+                            <button type="button" id="refreshNotificationsBtn" class="btn btn-primary">Refresh</button>
                         </div>
                         <div id="notificationsList" class="notifications-list">
                             <p class="text-center">Loading notifications...</p>
@@ -244,19 +245,19 @@
                 <section id="membersPage" class="page">
                     <div class="card">
                         <h2>Members Management</h2>
-                        <div class="flex-between" style="margin-bottom: 10px; gap: 8px;">
-                            <button id="addMemberBtn" class="btn btn-primary">+ Add Member</button>
-                            <input type="text" id="memberSearch" placeholder="Search members..." class="input" style="max-width: 220px;">
+                        <div class="flex-between member-actions">
+                            <button type="button" id="addMemberBtn" class="btn btn-primary">+ Add Member</button>
+                            <input type="text" id="memberSearch" placeholder="Search members..." class="input member-search">
                         </div>
                         <div class="table-responsive">
                             <table class="table">
                                 <thead>
                                     <tr>
-                                        <th>Name</th>
-                                        <th>Email</th>
-                                        <th>Phone</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Email</th>
+                                        <th scope="col">Phone</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="membersTable">
@@ -277,11 +278,11 @@
                             <table class="table">
                                 <thead>
                                     <tr>
-                                        <th>Member</th>
-                                        <th>Amount</th>
-                                        <th>Method</th>
-                                        <th>Date</th>
-                                        <th>Status</th>
+                                        <th scope="col">Member</th>
+                                        <th scope="col">Amount</th>
+                                        <th scope="col">Method</th>
+                                        <th scope="col">Date</th>
+                                        <th scope="col">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody id="paymentsTable">
@@ -299,22 +300,33 @@
                     <div class="card">
                         <h2>Reports</h2>
                         <div class="reports-grid">
-                            <button id="exportReportBtn" class="btn btn-secondary">📊 Export Report</button>
-                            <button id="generateBillBtn" class="btn btn-secondary">🧾 Generate Bill</button>
-                            <button id="addFeePackageBtn" class="btn btn-secondary">➕ Fee Package</button>
-                            <button id="addSubscriptionBtn" class="btn btn-secondary">➕ Subscription</button>
-                            <button id="addSupplementBtn" class="btn btn-secondary">➕ Supplement</button>
-                            <button id="addDietBtn" class="btn btn-secondary">➕ Diet</button>
+                            <button type="button" id="exportReportBtn" class="btn btn-secondary">📊 Export Report</button>
+                            <button type="button" id="generateBillBtn" class="btn btn-secondary">🧾 Generate Bill</button>
+                            <button type="button" id="addFeePackageBtn" class="btn btn-secondary">➕ Fee Package</button>
+                            <button type="button" id="addSubscriptionBtn" class="btn btn-secondary">➕ Subscription</button>
+                            <button type="button" id="addSupplementBtn" class="btn btn-secondary">➕ Supplement</button>
+                            <button type="button" id="addDietBtn" class="btn btn-secondary">➕ Diet</button>
                         </div>
                         <div id="reportsContent">
-                            <h4>Fee Packages</h4>
-                            <div id="feePackagesList" class="list-block">Loading...</div>
-                            <h4>Subscriptions</h4>
-                            <div id="subscriptionsList" class="list-block">Loading...</div>
-                            <h4>Supplements</h4>
-                            <div id="supplementsList" class="list-block">Loading...</div>
-                            <h4>Diets</h4>
-                            <div id="dietsList" class="list-block">Loading...</div>
+                            <h4>💳 Fee Packages</h4>
+                            <div id="feePackagesList" class="list-block">
+                                <p class="text-center text-light">Loading...</p>
+                            </div>
+                            
+                            <h4>📋 Subscriptions</h4>
+                            <div id="subscriptionsList" class="list-block">
+                                <p class="text-center text-light">Loading...</p>
+                            </div>
+                            
+                            <h4>💊 Supplements</h4>
+                            <div id="supplementsList" class="list-block">
+                                <p class="text-center text-light">Loading...</p>
+                            </div>
+                            
+                            <h4>🥗 Diet Plans</h4>
+                            <div id="dietsList" class="list-block">
+                                <p class="text-center text-light">Loading...</p>
+                            </div>
                         </div>
                     </div>
                 </section>

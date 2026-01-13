@@ -11,6 +11,7 @@ A comprehensive full-stack web application for managing gym operations, membersh
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Running the Application](#running-the-application)
+- [Basic Workflow](#basic-workflow)
 - [Database Schema](#database-schema)
 - [API Documentation](#api-documentation)
 - [Architecture](#architecture)
@@ -186,9 +187,15 @@ Edit `.env` and configure:
 ```env
 PORT=5000
 NODE_ENV=development
-DB_PATH=./database/gym_management.db
+DB_PATH=D:/gym/database/gym_management.db  # Use absolute path for data persistence
 JWT_SECRET=your_super_secret_jwt_key_change_in_production
+CORS_ORIGIN=http://localhost:3000
 ```
+
+**Important for data persistence:**
+- Use an **absolute path** for `DB_PATH` (e.g., `D:/gym/database/gym_management.db` on Windows or `/home/user/gym/database/gym_management.db` on Linux) to ensure data survives server restarts
+- For Render deployment, use `/tmp/gym_management.db` (note: Render's /tmp is ephemeral; use PostgreSQL for production)
+- Verify persistence: `node verify-db.js`
 
 ### 4. Initialize Database
 
@@ -242,6 +249,16 @@ The server will start with auto-reload on file changes.
 ```bash
 npm start
 ```
+
+## 🏃 Basic Workflow
+
+1) Install deps: `npm install`
+2) Configure env: copy `.env.example` → `.env`; set `DB_PATH` (use `/tmp/gym_management.db` on Render), `CORS_ORIGIN`, `JWT_SECRET`, and default admin credentials if desired.
+3) Initialize DB/tables: `npm run db:init` (server also self-creates tables on boot and seeds admin if missing).
+4) Run locally: `npm run dev` and open http://localhost:5000 (frontend and API served together).
+5) Run tests: `npm test` (coverage) or `npm run test:watch`.
+6) Deploy frontend hosting: `npx firebase-tools deploy --only hosting`.
+7) Deploy backend (Render/Node host): set env vars (`DB_PATH` writable, `PORT`, `CORS_ORIGIN`, `DEFAULT_ADMIN_EMAIL/PASSWORD`) then run `node backend/server.js`.
 
 ### Access the Application
 
@@ -493,31 +510,68 @@ For complete API documentation, see [API_DOCS.md](docs/API_DOCS.md).
 ### System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                     Frontend (SPA)                       │
-│  HTML5 | CSS3 | Vanilla JavaScript | Fetch API          │
-└─────────────────────────────────────────────────────────┘
-                          ↓
-                    HTTP/REST API
-                          ↓
-┌─────────────────────────────────────────────────────────┐
-│                   Backend (Node.js)                      │
-│        Express.js | Controllers | Middleware            │
-├─────────────────────────────────────────────────────────┤
-│               Authentication & Authorization            │
-│              (JWT | bcryptjs | Role-based)             │
-├─────────────────────────────────────────────────────────┤
-│                  Business Logic Layer                    │
-│    (User | Member | Bill | Payment Management)         │
-├─────────────────────────────────────────────────────────┤
-│                  Data Access Layer                       │
-│              (Database Interface | Helpers)             │
-└─────────────────────────────────────────────────────────┘
-                          ↓
-┌─────────────────────────────────────────────────────────┐
-│              SQLite Database                            │
-│  (Users | Members | Payments | Bills | Notifications)  │
-└─────────────────────────────────────────────────────────┘
+Client (SPA)
+┌─────────────────────────┐
+│ Frontend: HTML/CSS/JS   │
+│ Pages: index/login/dash │
+│ API client: fetch + JWT │
+└──────────────┬──────────┘
+           │ HTTPS
+           ▼
+┌─────────────────────────┐
+│ Backend: Express/Node   │
+│ Routes → Controllers    │
+│ Middleware: auth/CORS   │
+│ Logging: Winston        │
+└──────────────┬──────────┘
+           │ DAO
+           ▼
+┌─────────────────────────┐
+│ SQLite (file DB)        │
+│ users/members/payments  │
+│ bills/diets/store/etc.  │
+└─────────────────────────┘
+
+Hosting/Runtime:
+- Static frontend on Firebase Hosting (rewrite all to /pages/index.html)
+- API on Render/Node host (set DB_PATH writable like /tmp/gym_management.db)
+```
+
+Mermaid view:
+
+```mermaid
+flowchart TD
+    subgraph Client[Frontend SPA]
+        A[Pages: index/login/dashboard]
+        B[API client: fetch + JWT]
+    end
+
+    subgraph Backend[Express/Node]
+        R[Routes]
+        C[Controllers]
+        M[Middleware: auth/CORS]
+        L[Winston Logging]
+        R --> C --> M
+        M --> L
+    end
+
+    subgraph Data[SQLite]
+        D1[users]
+        D2[members]
+        D3[payments]
+        D4[bills/diets/store]
+    end
+
+    Client -->|HTTPS| Backend
+    Backend -->|DAO| Data
+
+    subgraph Hosting[Runtime]
+        H1[Firebase Hosting (static)]
+        H2[Render/Node (API)]
+    end
+
+    Client -. static assets .-> H1
+    Backend -. env: DB_PATH/CORS/JWT .-> H2
 ```
 
 ### Design Patterns
@@ -535,6 +589,15 @@ For complete API documentation, see [API_DOCS.md](docs/API_DOCS.md).
 - **Reusable Utilities**: Helper functions in utils directory
 - **Consistent Error Handling**: Centralized error middleware
 - **Logging Throughout**: Winston logger integrated at all levels
+
+### Optimizations
+
+- **Startup safety**: Server auto-creates SQLite directories/tables and seeds a default admin when missing, preventing boot-time failures.
+- **CORS hardening**: Default allowlist merged with env overrides; disallowed origins short-circuit with 403.
+- **Lean frontend**: Vanilla JS SPA with a single API client and static hosting for low latency and no cold starts.
+- **Parallel fetches**: Home stats load via `Promise.all`, reducing initial dashboard latency.
+- **Role-aware UI**: Admin-only links and calls hidden for members to avoid wasted requests.
+- **Logging coverage**: Structured logs from startup through controllers for faster prod debugging.
 
 ## 🧪 Testing
 
@@ -556,6 +619,8 @@ npm test -- --coverage
 - `tests/auth.test.js` - Authentication API tests
 - `tests/members.test.js` - Members API tests
 - `tests/database.test.js` - Database operation tests
+- `tests/newRoutes.test.js` - Route registration and health checks
+- `tests/reports.test.js` - Report export endpoints
 
 ### Test Coverage
 
@@ -564,6 +629,15 @@ The project aims for 60% code coverage. Run tests to see current coverage:
 ```bash
 npm test -- --coverage
 ```
+
+### Test Cases (high-level)
+- Auth: register/login/profile guards, invalid credentials, missing token.
+- Members: CRUD as admin, member visibility constraints, search/pagination.
+- Bills/Payments: create/list by member vs admin, status formatting, totals.
+- Notifications: unread count per user, list, mark-read flows.
+- Reports: CSV export success and headers.
+- Database: migrations/init idempotence and schema shape.
+- Routing: 404 handling, protected route rejection without JWT.
 
 ## 📝 Logging
 
