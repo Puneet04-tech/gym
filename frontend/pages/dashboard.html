@@ -5,18 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Gym Management System</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/dashboard.css">
-    <link rel="stylesheet" href="/css/vibrant-enhancements.css">
 </head>
 <body>
     <div class="dashboard">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>💪 GYM</h2>
+        <!-- Top Navigation Bar -->
+        <nav class="top-nav">
+            <div class="nav-brand">
+                <span>💪</span>
+                <span>GYM</span>
             </div>
-
-            <nav class="sidebar-nav">
+            <div class="nav-menu">
                 <a href="#" class="nav-item active" data-page="home">
                     <span class="icon">🏠</span>
                     <span>Home</span>
@@ -33,7 +31,7 @@
                     <span class="icon">🔔</span>
                     <span>Notifications</span>
                 </a>
-                <div id="adminMenu" style="display: none;">
+                <div id="adminMenu" class="nav-menu" style="display: flex; gap: 1rem;">
                     <a href="#" class="nav-item" data-page="members">
                         <span class="icon">👥</span>
                         <span>Members</span>
@@ -47,12 +45,12 @@
                         <span>Reports</span>
                     </a>
                 </div>
-                <a href="#" class="nav-item logout" id="logoutBtn">
+                <a href="#" class="nav-item logout" onclick="logout()">
                     <span class="icon">🚪</span>
                     <span>Logout</span>
                 </a>
-            </nav>
-        </aside>
+            </div>
+        </nav>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -63,8 +61,11 @@
                 </div>
                 <div class="header-right">
                     <div class="user-info">
-                        <span id="userName">User</span>
-                        <span id="userRole" class="role-badge"></span>
+                        <div class="user-avatar" id="userAvatar">A</div>
+                        <div class="user-details">
+                            <div class="user-name" id="userName">Admin User</div>
+                            <div class="user-role" id="userRole">Administrator</div>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -73,78 +74,101 @@
             <div class="content">
                 <!-- Home Page -->
                 <section id="homePage" class="page active">
-                    <div class="dashboard-grid">
-                        <div class="card welcome-card">
-                            <div class="pill">Home base</div>
-                            <h3 id="welcomeHeading">Welcome back</h3>
-                            <p id="welcomeMessage" class="welcome-sub">Welcome to Gym Management System</p>
-                            <div class="welcome-meta">
-                                <span class="chip">Live dashboard</span>
-                                <span class="chip">Quick actions ready</span>
+                    <!-- Welcome Section -->
+                    <div class="welcome-card">
+                        <h2>Welcome back, Admin!</h2>
+                        <p>Here's what's happening with your gym today. Stay on top of your game with real-time insights.</p>
+                        <div class="welcome-actions">
+                            <button class="btn btn-primary">View Reports</button>
+                            <button class="btn btn-secondary">Add Member</button>
+                        </div>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-value" id="totalBills">0</div>
+                                    <div class="stat-label">Total Bills</div>
+                                </div>
+                                <div class="stat-icon primary">📄</div>
+                            </div>
+                            <div class="stat-change positive">
+                                <span>↑</span>
+                                <span>12% from last month</span>
                             </div>
                         </div>
 
-                        <div class="card quick-card">
-                            <div class="card-head">
-                                <span class="card-icon">📋</span>
-                                <h3>Quick stats</h3>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-value" id="activeMembers">2</div>
+                                    <div class="stat-label">Active Members</div>
+                                </div>
+                                <div class="stat-icon success">👥</div>
                             </div>
-                            <div class="stats">
-                                <div class="stat">
-                                    <div class="stat-top">
-                                        <span class="stat-icon">🧾</span>
-                                        <p class="stat-label">Total Bills</p>
-                                    </div>
-                                    <p class="stat-value" id="totalBills">-</p>
+                            <div class="stat-change positive">
+                                <span>↑</span>
+                                <span>8% from last month</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-value" id="totalPayments">0</div>
+                                    <div class="stat-label">Total Payments</div>
                                 </div>
-                                <div class="stat">
-                                    <div class="stat-top">
-                                        <span class="stat-icon">🏋️</span>
-                                        <p class="stat-label">Active Members</p>
-                                    </div>
-                                    <p class="stat-value" id="activeMembers">-</p>
+                                <div class="stat-icon warning">💰</div>
+                            </div>
+                            <div class="stat-change positive">
+                                <span>↑</span>
+                                <span>23% from last month</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div>
+                                    <div class="stat-value" id="unreadNotifs">0</div>
+                                    <div class="stat-label">Unread Notifications</div>
                                 </div>
-                                <div class="stat">
-                                    <div class="stat-top">
-                                        <span class="stat-icon">💳</span>
-                                        <p class="stat-label">Total Payments</p>
-                                    </div>
-                                    <p class="stat-value" id="totalPayments">-</p>
-                                </div>
-                                <div class="stat">
-                                    <div class="stat-top">
-                                        <span class="stat-icon">🔔</span>
-                                        <p class="stat-label">Unread Notifications</p>
-                                    </div>
-                                    <p class="stat-value" id="unreadNotifs">-</p>
-                                </div>
+                                <div class="stat-icon danger">🔔</div>
+                            </div>
+                            <div class="stat-change negative">
+                                <span>↓</span>
+                                <span>5% from last week</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="focus-grid">
-                        <div class="card focus-card">
-                            <div class="card-head">
-                                <span class="card-icon">⚡</span>
-                                <h3>Today’s focus</h3>
-                            </div>
-                            <ul class="focus-list">
-                                <li><span class="dot dot-primary"></span>Review upcoming renewals and send reminders</li>
-                                <li><span class="dot dot-success"></span>Confirm cleared payments</li>
-                                <li><span class="dot dot-warning"></span>Check notifications that need replies</li>
-                            </ul>
+                    <!-- Quick Actions -->
+                    <div class="quick-actions">
+                        <div class="quick-actions-header">
+                            <h3 class="quick-actions-title">Quick Actions</h3>
                         </div>
-                        <div class="card focus-card">
-                            <div class="card-head">
-                                <span class="card-icon">🚀</span>
-                                <h3>Quick links</h3>
-                            </div>
-                            <div class="quick-links">
-                                <a href="#" class="quick-link" data-page="members">Add member</a>
-                                <a href="#" class="quick-link" data-page="bills">Create bill</a>
-                                <a href="#" class="quick-link" data-page="notifications">Send notification</a>
-                                <a href="#" class="quick-link" data-page="reports">View reports</a>
-                            </div>
+                        <div class="quick-actions-grid">
+                            <a href="#" class="quick-action-card" data-page="members">
+                                <div class="quick-action-icon">👤</div>
+                                <div class="quick-action-title">Add Member</div>
+                                <div class="quick-action-description">Register new gym member</div>
+                            </a>
+                            <a href="#" class="quick-action-card" data-page="bills">
+                                <div class="quick-action-icon">🧾</div>
+                                <div class="quick-action-title">Create Bill</div>
+                                <div class="quick-action-description">Generate new invoice</div>
+                            </a>
+                            <a href="#" class="quick-action-card" data-page="notifications">
+                                <div class="quick-action-icon">📢</div>
+                                <div class="quick-action-title">Send Notification</div>
+                                <div class="quick-action-description">Broadcast message</div>
+                            </a>
+                            <a href="#" class="quick-action-card" data-page="reports">
+                                <div class="quick-action-icon">📈</div>
+                                <div class="quick-action-title">View Reports</div>
+                                <div class="quick-action-description">Analytics & insights</div>
+                            </a>
                         </div>
                     </div>
                 </section>
@@ -187,15 +211,15 @@
                         <form id="changePasswordForm">
                             <div class="form-group">
                                 <label>Current Password</label>
-                                <input type="password" id="oldPassword" required>
+                                <input type="password" class="form-input" id="oldPassword" required autocomplete="current-password">
                             </div>
                             <div class="form-group">
                                 <label>New Password</label>
-                                <input type="password" id="newPassword" required>
+                                <input type="password" id="newPassword" required autocomplete="new-password">
                             </div>
                             <div class="form-group">
                                 <label>Confirm Password</label>
-                                <input type="password" id="confirmPassword" required>
+                                <input type="password" id="confirmPassword" required autocomplete="new-password">
                             </div>
                             <button type="submit" class="btn btn-primary">Change Password</button>
                         </form>
@@ -205,7 +229,10 @@
                 <!-- Bills Page -->
                 <section id="billsPage" class="page">
                     <div class="card">
-                        <h2>Bills &amp; Receipts</h2>
+                        <div class="flex-between">
+                            <h2>Bills &amp; Receipts</h2>
+                            <button type="button" id="refreshBillsBtn" class="btn btn-secondary">🔄 Refresh Bills</button>
+                        </div>
                         <div class="table-responsive">
                             <table class="table">
                                 <thead>
@@ -312,17 +339,17 @@
                             <div id="feePackagesList" class="list-block">
                                 <p class="text-center text-light">Loading...</p>
                             </div>
-                            
+
                             <h4>📋 Subscriptions</h4>
                             <div id="subscriptionsList" class="list-block">
                                 <p class="text-center text-light">Loading...</p>
                             </div>
-                            
+
                             <h4>💊 Supplements</h4>
                             <div id="supplementsList" class="list-block">
                                 <p class="text-center text-light">Loading...</p>
                             </div>
-                            
+
                             <h4>🥗 Diet Plans</h4>
                             <div id="dietsList" class="list-block">
                                 <p class="text-center text-light">Loading...</p>
@@ -342,7 +369,8 @@
         </div>
     </div>
 
-    <script src="/js/api.js"></script>
+    <!-- LocalStorage API -->
+    <script src="/js/localStorageApi.js"></script>
     <script src="/js/dashboard.js"></script>
 </body>
 </html>

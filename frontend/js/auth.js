@@ -1,4 +1,15 @@
 // Authentication JavaScript
+
+// Helper function to show messages
+function showMessage(element, message, type) {
+    element.textContent = message;
+    element.className = `message ${type}`;
+    element.style.display = 'block';
+    setTimeout(() => {
+        element.style.display = 'none';
+    }, 5000);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
@@ -6,11 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const authForms = document.querySelectorAll('.auth-form');
     const authMessage = document.getElementById('authMessage');
 
-    // Check if user is already logged in
-    const token = localStorage.getItem('token');
-    if (token) {
-        window.location.href = '/pages/dashboard.html';
-    }
+    // DO NOT check if user is logged in - causes redirect loop
 
     // Tab switching
     tabButtons.forEach(button => {
@@ -45,11 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('memberId', response.user.member_id);
                 }
                 
-                showMessage(authMessage, 'Login successful! Redirecting...', 'success');
-                
-                setTimeout(() => {
-                    window.location.href = '/pages/dashboard.html';
-                }, 1500);
+                // Immediate redirect
+                window.location.replace('/pages/dashboard.html');
             } catch (error) {
                 showMessage(authMessage, error.message || 'Login failed', 'error');
             }

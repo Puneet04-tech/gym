@@ -2,6 +2,45 @@
 let currentUser = null;
 let currentPage = 'home';
 
+// Utility functions
+function showMessage(element, message, type = 'info') {
+    if (!element) return;
+    
+    element.textContent = message;
+    element.className = `message show ${type}`;
+    element.style.display = 'block';
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        element.classList.remove('show');
+        element.style.display = 'none';
+    }, 5000);
+}
+
+function formatDate(dateString) {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+}
+
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+    }).format(amount);
+}
+
+// Simple API wrapper for consistency
+const api = {
+    async get(endpoint) {
+        // Convert REST API calls to localStorage API calls
+        if (endpoint.includes('/members')) {
+            const response = await membersAPI.getAll();
+            return response;
+        }
+        return { data: [] };
+    }
+};
+
 function setStatValue(id, value) {
     const el = document.getElementById(id);
     if (el) {
@@ -9,15 +48,34 @@ function setStatValue(id, value) {
     }
 }
 
+// Add click handlers for quick action cards
 document.addEventListener('DOMContentLoaded', () => {
-    // Check authentication
-    const token = localStorage.getItem('token');
-    if (!token) {
-        window.location.href = '/pages/login.html';
+    // Quick action cards navigation
+    document.querySelectorAll('.quick-action-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            e.preventDefault();
+            const page = card.dataset.page;
+            if (page) {
+                // Find and click the corresponding nav item
+                const navItem = document.querySelector(`[data-page="${page}"]`);
+                if (navItem) {
+                    navItem.click();
+                }
+            }
+        });
+    });
+    
+    // Simple localStorage check - no redirects, no loops
+    const storedUser = localStorage.getItem('user');
+    const storedToken = localStorage.getItem('token');
+    
+    if (!storedUser || !storedToken) {
+        // No user data - go to login ONCE
+        window.location.replace('/pages/login.html');
         return;
     }
 
-    currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    currentUser = JSON.parse(storedUser);
     
     // Load user info
     loadUserInfo();
@@ -37,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setupStoreAndDiets();
         setupFeePackages();
         setupSubscriptions();
+        setupBillsRefresh();
         setupNotificationsPage();
     
     // Setup forms
@@ -247,11 +306,10 @@ function loadPage(page) {
 
 async function loadHomeData() {
     try {
-        document.getElementById('welcomeMessage').textContent =
-            `Welcome back, ${currentUser.first_name || currentUser.username}!`;
-        const heading = document.getElementById('welcomeHeading');
-        if (heading) {
-            heading.textContent = `Welcome, ${currentUser.first_name || currentUser.username}`;
+        // Update welcome message in modern layout
+        const welcomeCard = document.querySelector('.welcome-card h2');
+        if (welcomeCard) {
+            welcomeCard.textContent = `Welcome back, ${currentUser.first_name || currentUser.username}!`;
         }
 
         await refreshQuickStats();
@@ -290,23 +348,30 @@ async function loadBillsData() {
             response = await billsAPI.getByMember(memberId, 1, 10);
         }
         
+        console.log('Bills response:', response); // Debug log
+        
         const billsTable = document.getElementById('billsTable');
         billsTable.innerHTML = '';
         
-        if (response.data.length === 0) {
+        const bills = response.data || [];
+        console.log('Bills array:', bills); // Debug log
+        
+        if (bills.length === 0) {
             billsTable.innerHTML = '<tr><td colspan="5" class="text-center">No bills found</td></tr>';
             return;
         }
         
-        response.data.forEach(bill => {
+        bills.forEach(bill => {
             const row = document.createElement('tr');
+            const total = parseFloat(bill.total || bill.amount) + (parseFloat(bill.amount || 0) * (parseFloat(bill.tax || 0) / 100));
             row.innerHTML = `
-                <td>${bill.bill_number}</td>
-                <td>${formatDate(bill.bill_date)}</td>
-                <td>${formatCurrency(bill.total)}</td>
-                <td><span class="badge badge-primary">${bill.status}</span></td>
+                <td><strong>${bill.bill_number}</strong></td>
+                <td>${formatDate(bill.bill_date || bill.created_at)}</td>
+                <td><strong>${formatCurrency(total)}</strong></td>
+                <td><span class="badge badge-${bill.status === 'paid' ? 'success' : 'primary'}">${bill.status}</span></td>
                 <td>
-                    <button class="btn btn-small btn-success" onclick="downloadBill('${bill.id}')">Download</button>
+                    <button class="btn btn-small btn-success" onclick="downloadBill('${bill.id}')">📄 Download</button>
+                    <button class="btn btn-small btn-secondary" onclick="viewBill('${bill.id}')">👁️ View</button>
                 </td>
             `;
             billsTable.appendChild(row);
@@ -377,10 +442,15 @@ async function refreshQuickStats() {
                 notificationsAPI.unreadCount(currentUser.id),
             ]);
 
-            setStatValue('totalBills', billsResponse.pagination?.total ?? billsResponse.data?.length ?? 0);
-            setStatValue('activeMembers', memberStats.data?.active ?? memberStats.active ?? 0);
-            setStatValue('totalPayments', paymentStats.data?.total ?? paymentStats.total ?? 0);
-            setStatValue('unreadNotifs', unreadRes.count ?? unreadRes.data?.count ?? '-');
+            const totalBills = billsResponse.pagination?.total ?? billsResponse.data?.length ?? 0;
+            const activeMembers = memberStats.data?.active ?? memberStats.active ?? 0;
+            const totalPayments = paymentStats.data?.total ?? paymentStats.total ?? 0;
+            const unreadNotifs = unreadRes.count ?? unreadRes.data?.count ?? 0;
+
+            setStatValue('totalBills', totalBills);
+            setStatValue('activeMembers', activeMembers);
+            setStatValue('totalPayments', totalPayments);
+            setStatValue('unreadNotifs', unreadNotifs);
         } else {
             const memberId = getMemberId();
             if (!memberId) {
@@ -393,10 +463,14 @@ async function refreshQuickStats() {
                 notificationsAPI.unreadCount(currentUser.id),
             ]);
 
-            setStatValue('totalBills', billsResponse.pagination?.total ?? billsResponse.data?.length ?? 0);
-            setStatValue('activeMembers', '-');
-            setStatValue('totalPayments', paymentsResponse.pagination?.total ?? paymentsResponse.data?.length ?? 0);
-            setStatValue('unreadNotifs', unreadRes.count ?? unreadRes.data?.count ?? '-');
+            const totalBills = billsResponse.pagination?.total ?? billsResponse.data?.length ?? 0;
+            const totalPayments = paymentsResponse.pagination?.total ?? paymentsResponse.data?.length ?? 0;
+            const unreadNotifs = unreadRes.count ?? unreadRes.data?.count ?? 0;
+
+            setStatValue('totalBills', totalBills);
+            setStatValue('activeMembers', 1); // Current user
+            setStatValue('totalPayments', totalPayments);
+            setStatValue('unreadNotifs', unreadNotifs);
         }
     } catch (error) {
         console.error('Failed to refresh quick stats:', error);
@@ -591,6 +665,60 @@ function downloadBill(billId) {
     window.open(`/api/bills/${billId}/receipt`, '_blank');
 }
 
+function viewBill(billId) {
+    // Get bill details and show in modal
+    billsAPI.getById(billId).then(response => {
+        const bill = response.data || response;
+        const total = parseFloat(bill.amount) + (parseFloat(bill.amount) * (parseFloat(bill.tax || 0) / 100));
+        const taxAmount = parseFloat(bill.amount) * (parseFloat(bill.tax || 0) / 100);
+        
+        openModal(`
+            <h3>🧾 Bill Details</h3>
+            <div class="bill-details">
+                <div class="detail-row">
+                    <span class="label">Bill Number:</span>
+                    <span class="value"><strong>${bill.bill_number}</strong></span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Date:</span>
+                    <span class="value">${formatDate(bill.bill_date || bill.created_at)}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Due Date:</span>
+                    <span class="value">${formatDate(bill.due_date)}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Description:</span>
+                    <span class="value">${bill.description || 'No description'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Subtotal:</span>
+                    <span class="value">${formatCurrency(bill.amount)}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Tax (${bill.tax || 0}%):</span>
+                    <span class="value">${formatCurrency(taxAmount)}</span>
+                </div>
+                <div class="detail-row total">
+                    <span class="label">Total:</span>
+                    <span class="value"><strong>${formatCurrency(total)}</strong></span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Status:</span>
+                    <span class="value"><span class="badge badge-${bill.status === 'paid' ? 'success' : 'primary'}">${bill.status}</span></span>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="downloadBill('${bill.id}')">📄 Download Receipt</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+            </div>
+        `);
+    }).catch(error => {
+        console.error('Failed to load bill details:', error);
+        alert('Failed to load bill details');
+    });
+}
+
 function editMember(memberId) {
     // open modal to edit
     openModal(`
@@ -732,89 +860,133 @@ function setupCreateBill() {
     const generateBillBtn = document.getElementById('generateBillBtn');
     if (!generateBillBtn) return;
     generateBillBtn.addEventListener('click', async () => {
-        // Fetch members and their payments
+        // Fetch members
         let membersOptions = '';
         let membersData = [];
         
         try {
-            const response = await api.get('/members?limit=1000');
-            membersData = response.data || [];
-            if (membersData.length === 0) {
-                alert('No members found. Please add members first.');
-                return;
-            }
-            membersOptions = membersData.map(m => 
-                `<option value="${m.id}">${m.first_name || ''} ${m.last_name || ''} (${m.email})</option>`
+            const membersResponse = await membersAPI.getAll();
+            membersData = membersResponse.data || membersResponse;
+            membersOptions = membersData.map(member => 
+                `<option value="${member.id}">${member.first_name} ${member.last_name}</option>`
             ).join('');
         } catch (error) {
             console.error('Failed to load members:', error);
-            alert('Failed to load members list');
-            return;
+            membersOptions = '<option value="">No members available</option>';
         }
         
         openModal(`
-            <h3>Create Bill</h3>
+            <h3>🧾 Create New Bill</h3>
             <div class="message" id="createBillMessage"></div>
             <form id="createBillForm" class="form-grid">
                 <div class="form-group">
-                    <label>Select Member *</label>
-                    <select id="billMemberId" required>
+                    <label for="billMemberId">Select Member *</label>
+                    <select id="billMemberId" required class="form-control">
                         <option value="">-- Select Member --</option>
                         ${membersOptions}
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Select Payment *</label>
-                    <select id="billPaymentId" required>
-                        <option value="">-- First select a member --</option>
+                    <label for="billPaymentId">Link Payment (Optional)</label>
+                    <select id="billPaymentId" class="form-control">
+                        <option value="">-- No payment selected --</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Amount</label>
-                    <input type="number" step="0.01" id="billAmount" required>
+                    <label for="billAmount">Amount ($) *</label>
+                    <input type="number" step="0.01" min="0" id="billAmount" required 
+                           class="form-control" placeholder="0.00">
                 </div>
                 <div class="form-group">
-                    <label>Tax %</label>
-                    <input type="number" step="0.01" id="billTax" value="0">
+                    <label for="billTax">Tax (%)</label>
+                    <input type="number" step="0.01" min="0" max="100" id="billTax" 
+                           value="0" class="form-control" placeholder="0">
                 </div>
-                <button type="submit" class="btn btn-primary">Create Bill</button>
+                <div class="form-group">
+                    <label for="billDescription">Description</label>
+                    <textarea id="billDescription" rows="3" class="form-control" 
+                              placeholder="Enter bill description (optional)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="billDueDate">Due Date</label>
+                    <input type="date" id="billDueDate" class="form-control">
+                </div>
+                <div class="form-preview" id="billPreview" style="display: none;">
+                    <h4>📋 Bill Preview</h4>
+                    <div class="preview-row">
+                        <span>Subtotal:</span>
+                        <span id="previewSubtotal">$0.00</span>
+                    </div>
+                    <div class="preview-row">
+                        <span>Tax:</span>
+                        <span id="previewTax">$0.00</span>
+                    </div>
+                    <div class="preview-row total">
+                        <span>Total:</span>
+                        <span id="previewTotal">$0.00</span>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">💾 Create Bill</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
             </form>
         `);
-
         const memberSelect = document.getElementById('billMemberId');
         const paymentSelect = document.getElementById('billPaymentId');
         const amountInput = document.getElementById('billAmount');
+        const taxInput = document.getElementById('billTax');
+        const descriptionInput = document.getElementById('billDescription');
+        const dueDateInput = document.getElementById('billDueDate');
+        const preview = document.getElementById('billPreview');
+        
+        // Set default due date to 30 days from now
+        const defaultDueDate = new Date();
+        defaultDueDate.setDate(defaultDueDate.getDate() + 30);
+        dueDateInput.value = defaultDueDate.toISOString().split('T')[0];
+        
+        // Function to calculate and show preview
+        function updateBillPreview() {
+            const amount = parseFloat(amountInput.value) || 0;
+            const tax = parseFloat(taxInput.value) || 0;
+            const taxAmount = amount * (tax / 100);
+            const total = amount + taxAmount;
+            
+            if (amount > 0) {
+                preview.style.display = 'block';
+                document.getElementById('previewSubtotal').textContent = formatCurrency(amount);
+                document.getElementById('previewTax').textContent = formatCurrency(taxAmount);
+                document.getElementById('previewTotal').textContent = formatCurrency(total);
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+        
+        // Update preview when amount or tax changes
+        amountInput.addEventListener('input', updateBillPreview);
+        taxInput.addEventListener('input', updateBillPreview);
         
         // When member is selected, load their payments
         memberSelect.addEventListener('change', async (e) => {
             const memberId = e.target.value;
-            if (!memberId) {
-                paymentSelect.innerHTML = '<option value="">-- First select a member --</option>';
-                return;
-            }
+            paymentSelect.innerHTML = '<option value="">-- No payment selected --</option>';
             
-            try {
-                paymentSelect.innerHTML = '<option value="">Loading payments...</option>';
-                const paymentsResponse = await paymentsAPI.getByMember(memberId, 1, 100);
-                const payments = paymentsResponse.data || [];
-                
-                if (payments.length === 0) {
-                    paymentSelect.innerHTML = '<option value="">No payments found for this member</option>';
-                    return;
+            if (memberId) {
+                try {
+                    const paymentsResponse = await paymentsAPI.getByMember(memberId, 1, 100);
+                    const payments = paymentsResponse.data || paymentsResponse;
+                    
+                    if (payments && payments.length > 0) {
+                        const paymentOptions = payments.map(payment => 
+                            `<option value="${payment.id}">
+                                ${formatCurrency(payment.amount)} - ${formatDate(payment.date)}
+                            </option>`
+                        ).join('');
+                        paymentSelect.innerHTML = '<option value="">-- No payment selected --</option>' + paymentOptions;
+                    }
+                } catch (error) {
+                    console.error('Failed to load payments:', error);
                 }
-                
-                paymentSelect.innerHTML = '<option value="">-- Select Payment --</option>' + 
-                    payments.map(p => 
-                        `<option value="${p.id}">$${parseFloat(p.amount || 0).toFixed(2)} - ${p.payment_method} (${p.status})</option>`
-                    ).join('');
-                
-                // Auto-fill amount from first payment
-                if (payments[0] && payments[0].amount) {
-                    amountInput.value = parseFloat(payments[0].amount).toFixed(2);
-                }
-            } catch (error) {
-                console.error('Failed to load payments:', error);
-                paymentSelect.innerHTML = '<option value="">Failed to load payments</option>';
             }
         });
 
@@ -823,25 +995,71 @@ function setupCreateBill() {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = form.querySelector('button[type="submit"]');
+            
             try {
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Creating...';
+                submitBtn.innerHTML = '⏳ Creating...';
                 
-                await billsAPI.create({
+                const paymentId = document.getElementById('billPaymentId').value;
+                const billData = {
                     member_id: document.getElementById('billMemberId').value,
-                    payment_id: document.getElementById('billPaymentId').value,
                     amount: parseFloat(document.getElementById('billAmount').value),
                     tax: parseFloat(document.getElementById('billTax').value || '0'),
-                });
-                showMessage(msg, 'Bill created successfully', 'success');
+                    description: document.getElementById('billDescription').value,
+                    due_date: document.getElementById('billDueDate').value,
+                    bill_date: new Date().toISOString().split('T')[0]
+                };
+                
+                // Only add payment_id if one was selected
+                if (paymentId) {
+                    billData.payment_id = paymentId;
+                }
+                
+                const newBill = await billsAPI.create(billData);
+                showMessage(msg, `✅ Bill ${newBill.bill_number} created successfully!`, 'success');
+                
+                // Reset form
+                form.reset();
+                preview.style.display = 'none';
+                dueDateInput.value = defaultDueDate.toISOString().split('T')[0];
+                
+                // Refresh bills data and stats
                 await loadBillsData();
-                setTimeout(closeModal, 800);
+                await refreshQuickStats();
+                
+                // Close modal after success
+                setTimeout(() => {
+                    closeModal();
+                }, 1500);
             } catch (error) {
-                showMessage(msg, error.message || 'Failed to create bill', 'error');
+                console.error('Failed to create bill:', error);
+                showMessage(msg, `❌ Failed to create bill: ${error.message}`, 'error');
+            } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Create Bill';
+                submitBtn.innerHTML = '💾 Create Bill';
             }
         });
+    });
+}
+
+function setupBillsRefresh() {
+    const refreshBtn = document.getElementById('refreshBillsBtn');
+    if (!refreshBtn) return;
+    
+    refreshBtn.addEventListener('click', async () => {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '🔄 Refreshing...';
+        
+        try {
+            await loadBillsData();
+            await refreshQuickStats();
+            console.log('Bills refreshed successfully');
+        } catch (error) {
+            console.error('Failed to refresh bills:', error);
+        } finally {
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '🔄 Refresh Bills';
+        }
     });
 }
 
