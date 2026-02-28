@@ -116,20 +116,36 @@ window.authAPI = {
 window.membersAPI = {
     async getAll(page, limit) {
         const members = getCollection('members');
-        const filtered = members.filter(m => m.is_active !== 0);
+        const users = getCollection('users');
+        
+        // Combine members and users (excluding admins)
+        const allMembers = [
+            ...members.filter(m => m.is_active !== 0),
+            ...users.filter(u => u.role !== 'admin' && u.is_active !== 0)
+        ];
+        
         return {
-            data: filtered,
-            pagination: { total: filtered.length, page: page || 1, limit: limit || 100 }
+            data: allMembers,
+            pagination: { total: allMembers.length, page: page || 1, limit: limit || 100 }
         };
     },
 
     async stats() {
         const members = getCollection('members');
-        const activeMembers = members.filter(m => m.is_active !== 0);
+        const users = getCollection('users');
+        
+        // Combine members and users (excluding admins)
+        const allMembers = [
+            ...members.filter(m => m.is_active !== 0),
+            ...users.filter(u => u.role !== 'admin' && u.is_active !== 0)
+        ];
+        
+        const activeMembers = allMembers.filter(m => m.membership_status === 'active');
+        
         return {
-            total: activeMembers.length,
-            active: activeMembers.filter(m => m.membership_status === 'active').length,
-            inactive: activeMembers.filter(m => m.membership_status !== 'active').length
+            total: allMembers.length,
+            active: activeMembers.length,
+            inactive: allMembers.filter(m => m.membership_status !== 'active').length
         };
     },
 
@@ -142,9 +158,16 @@ window.membersAPI = {
 
     async search(query) {
         const members = getCollection('members');
-        const filtered = members.filter(m => {
-            if (m.is_active === 0) return false;
-            const searchText = `${m.first_name} ${m.last_name} ${m.email} ${m.phone}`.toLowerCase();
+        const users = getCollection('users');
+        
+        // Combine members and users (excluding admins)
+        const allMembers = [
+            ...members.filter(m => m.is_active !== 0),
+            ...users.filter(u => u.role !== 'admin' && u.is_active !== 0)
+        ];
+        
+        const filtered = allMembers.filter(m => {
+            const searchText = `${m.first_name || ''} ${m.last_name || ''} ${m.email || ''} ${m.phone || ''}`.toLowerCase();
             return searchText.includes(query.toLowerCase());
         });
         return { data: filtered };
@@ -216,6 +239,7 @@ window.membersAPI = {
 window.billsAPI = {
     async getAll(page, limit) {
         const bills = getCollection('bills');
+        console.log('Loading all bills:', bills); // Debug log
         return {
             data: bills,
             pagination: { total: bills.length, page: page || 1, limit: limit || 100 }
@@ -225,6 +249,7 @@ window.billsAPI = {
     async getByMember(memberId, page, limit) {
         const bills = getCollection('bills');
         const filtered = bills.filter(b => b.member_id === memberId);
+        console.log(`Loading bills for member ${memberId}:`, filtered); // Debug log
         return {
             data: filtered,
             pagination: { total: filtered.length, page: page || 1, limit: limit || 100 }
@@ -232,7 +257,10 @@ window.billsAPI = {
     },
 
     async create(billData) {
+        console.log('Creating bill with data:', billData); // Debug log
         const bills = getCollection('bills');
+        console.log('Current bills:', bills); // Debug log
+        
         const newBill = {
             id: generateId(),
             bill_number: `BILL-${Date.now()}`,
@@ -247,6 +275,11 @@ window.billsAPI = {
         saveCollection('bills', bills);
         console.log('Bill created:', newBill); // Debug log
         console.log('All bills after creation:', bills); // Debug all bills
+        
+        // Verify the bill was saved
+        const savedBills = getCollection('bills');
+        console.log('Verification - saved bills:', savedBills); // Verification log
+        
         return newBill;
     },
 

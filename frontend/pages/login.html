@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gym Management System - Login</title>
+    <title>Login - Gym Management System</title>
     <link rel="stylesheet" href="/css/style.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
     <div class="login-container">
@@ -70,8 +74,8 @@
         </div>
     </div>
 
-    <!-- Load localStorage API -->
-    <script src="/js/localStorageApi.js"></script>
+    <!-- MongoDB API Configuration -->
+    <script src="/js/mongoApi.js"></script>
     <script>
         // Tab switching functionality
         document.addEventListener('DOMContentLoaded', () => {
@@ -113,42 +117,25 @@
                 submitBtn.disabled = true;
                 
                 try {
-                    // Simulate API call with localStorage
+                    // Use Firebase authentication
                     const email = formData.get('email');
                     const password = formData.get('password');
                     
-                    // Get users from localStorage
-                    const users = JSON.parse(localStorage.getItem('users') || '[]');
+                    const result = await authAPI.login({ email, password });
                     
-                    // Find user
-                    const user = users.find(u => u.email === email && u.password === password);
+                    // Store user data in localStorage for session management
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    localStorage.setItem('token', result.token);
                     
-                    if (user) {
-                        // Create token (simple simulation)
-                        const token = btoa(`${user.email}:${Date.now()}`);
-                        
-                        // Store user data
-                        localStorage.setItem('user', JSON.stringify({
-                            id: user.id,
-                            email: user.email,
-                            first_name: user.first_name,
-                            last_name: user.last_name,
-                            username: user.username
-                        }));
-                        localStorage.setItem('token', token);
-                        
-                        // Show success message
-                        messageEl.textContent = 'Login successful! Redirecting...';
-                        messageEl.className = 'message success';
-                        messageEl.style.display = 'block';
-                        
-                        // Redirect to dashboard
-                        setTimeout(() => {
-                            window.location.href = '/pages/dashboard.html';
-                        }, 1500);
-                    } else {
-                        throw new Error('Invalid email or password');
-                    }
+                    // Show success message
+                    messageEl.textContent = 'Login successful! Redirecting...';
+                    messageEl.className = 'message success';
+                    messageEl.style.display = 'block';
+                    
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = '/pages/dashboard.html';
+                    }, 1500);
                 } catch (error) {
                     messageEl.textContent = error.message || 'Login failed. Please try again.';
                     messageEl.className = 'message error';
@@ -171,48 +158,29 @@
                 submitBtn.disabled = true;
                 
                 try {
-                    // Get form data
-                    const first_name = formData.get('first_name');
-                    const last_name = formData.get('last_name');
-                    const username = formData.get('username');
-                    const email = formData.get('email');
-                    const password = formData.get('password');
-                    
-                    // Get existing users
-                    const users = JSON.parse(localStorage.getItem('users') || '[]');
-                    
-                    // Check if user already exists
-                    if (users.find(u => u.email === email)) {
-                        throw new Error('Email already registered');
-                    }
-                    
-                    if (users.find(u => u.username === username)) {
-                        throw new Error('Username already taken');
-                    }
-                    
-                    // Create new user
-                    const newUser = {
-                        id: Date.now().toString(),
-                        first_name,
-                        last_name,
-                        username,
-                        email,
-                        password,
-                        created_at: new Date().toISOString()
+                    // Use Firebase authentication
+                    const userData = {
+                        first_name: formData.get('first_name'),
+                        last_name: formData.get('last_name'),
+                        username: formData.get('username'),
+                        email: formData.get('email'),
+                        password: formData.get('password')
                     };
                     
-                    // Save user
-                    users.push(newUser);
-                    localStorage.setItem('users', JSON.stringify(users));
+                    const result = await authAPI.register(userData);
+                    
+                    // Store user data in localStorage for session management
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    localStorage.setItem('token', result.token);
                     
                     // Show success message
-                    messageEl.textContent = 'Registration successful! Please login.';
+                    messageEl.textContent = 'Registration successful! Redirecting...';
                     messageEl.className = 'message success';
                     messageEl.style.display = 'block';
                     
-                    // Switch to login tab
+                    // Redirect to dashboard
                     setTimeout(() => {
-                        document.querySelector('[data-tab="login"]').click();
+                        window.location.href = '/pages/dashboard.html';
                     }, 1500);
                 } catch (error) {
                     messageEl.textContent = error.message || 'Registration failed. Please try again.';
